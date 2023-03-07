@@ -1,0 +1,844 @@
+---
+title: "Add_orthologs"
+author: "Lilly"
+date: "2023-02-13"
+output: html_document
+---
+
+```{r}
+library(rtracklayer)
+library(tidyverse)
+library(gggenomes)
+```
+
+```{r, message=FALSE}
+## Import gtf files 
+
+elegans <- rtracklayer::import("../synteny/caenorhabditis_elegans.PRJNA13758.WBPS16.canonical_geneset.gtf")
+elegans=as.data.frame(elegans)
+
+becei <- rtracklayer::import("../synteny/caenorhabditis_becei.PRJEB28243.WBPS16.canonical_geneset.gtf")
+becei = as.data.frame(becei)
+
+bovis <- rtracklayer::import("../synteny/caenorhabditis_bovis.PRJEB34497.WBPS16.canonical_geneset.gtf")
+bovis=as.data.frame(bovis)
+
+briggsae <- rtracklayer::import("../synteny/caenorhabditis_briggsae.PRJNA10731.WBPS16.canonical_geneset.gtf")
+briggsae <- as.data.frame(briggsae)
+
+inopinata <- rtracklayer::import("../synteny/caenorhabditis_inopinata.PRJDB5687.WBPS16.canonical_geneset.gtf")
+inopinata <-  as.data.frame(inopinata)
+
+latens <- rtracklayer::import("../synteny/caenorhabditis_latens.PRJNA248912.WBPS16.canonical_geneset.gtf")
+latens <-  as.data.frame(latens)
+
+nigoni <- rtracklayer::import("../synteny/caenorhabditis_nigoni.PRJNA384657.WBPS16.canonical_geneset.gtf")
+nigoni <-  as.data.frame(nigoni)
+
+panamensis <- rtracklayer::import("../synteny/caenorhabditis_panamensis.PRJEB28259.WBPS16.canonical_geneset.gtf")
+panamensis <- as.data.frame(panamensis)
+
+remanei <- rtracklayer::import("../synteny/caenorhabditis_remanei.PRJNA577507.WBPS16.canonical_geneset.gtf")
+remanei <- as.data.frame(remanei)
+
+tribulationis <- rtracklayer::import("../synteny/caenorhabditis_tribulationis.PRJEB12608.WBPS16.canonical_geneset.gtf")
+tribulationis <- as.data.frame(tribulationis)
+
+tropicalis <- rtracklayer::import("../synteny/caenorhabditis_tropicalis.PRJNA53597.WBPS16.canonical_geneset.gtf")
+tropicalis <- as.data.frame(tropicalis)
+
+```
+
+```{r}
+## Changes gtf files colnames to match gggenomes requirements
+
+colnames(elegans)[1] <- "scaff"
+elegans$seq_id = paste("elegans", elegans$scaff ,sep = "_")
+
+colnames(becei)[1] <- "scaff"
+becei$seq_id = paste("becei", becei$scaff ,sep = "_")
+
+colnames(bovis)[1] <- "scaff"
+bovis$seq_id = paste("bovis", bovis$scaff ,sep = "_")
+
+colnames(briggsae)[1] <- "scaff"
+briggsae$seq_id = paste("briggsae", briggsae$scaff ,sep = "_")
+
+colnames(inopinata)[1] <- "scaff"
+inopinata$seq_id = paste("inopinata", inopinata$scaff ,sep = "_")
+
+colnames(latens)[1] <- "scaff"
+latens$seq_id = paste("latens", latens$scaff ,sep = "_")
+
+colnames(nigoni)[1] <- "scaff"
+nigoni$seq_id = paste("nigoni", nigoni$scaff ,sep = "_")
+
+colnames(panamensis)[1] <- "scaff"
+panamensis$seq_id = paste("panamensis", panamensis$scaff ,sep = "_")
+
+colnames(remanei)[1] <- "scaff"
+remanei$seq_id = paste("remanei", remanei$scaff ,sep = "_")
+
+colnames(tribulationis)[1] <- "scaff"
+tribulationis$seq_id = paste("tribulationis", tribulationis$scaff ,sep = "_")
+
+colnames(tropicalis)[1] <- "scaff"
+tropicalis$seq_id = paste("tropicalis", tropicalis$scaff ,sep = "_")
+```
+
+```{r}
+#Import paf file
+paf <- read.table("../synteny/evolver_Caenorhabditis.paf", sep = "\t")
+
+#Changes PAF colnames to match gggenomes requirements 
+colnames(paf) <- c("seq_id", "length1", "start", "end", "strand", "seq_id2", "lenght2", "start2", "end2", "nmatch", "alen", "mapq", "other")
+```
+
+```{r}
+## Add the orthologs in the GTF files 
+
+#elegans 
+ortho_elegans <- orthogroups_na %>%  
+  select(Orthogroup, elegans_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "gene_id") %>%
+  separate(col = gene_id, into = paste("gene_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="gene_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$gene_id))
+
+#Merge
+elegans <- merge(elegans, ortho_elegans, by = "gene_id", all.x = TRUE)
+
+#becei
+ortho_becei <- orthogroups_na %>%  
+  select(Orthogroup, becei_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge 
+becei <- merge(becei, ortho_becei, by = "transcript_id", all.x = TRUE)
+
+#bovis 
+ortho_bovis <- orthogroups_na %>%  
+  select(Orthogroup, bovis_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge
+bovis <- merge(bovis, ortho_bovis, by = "transcript_id", all.x = TRUE)
+
+#briggsae
+ortho_briggsae <- orthogroups_na %>%  
+  select(Orthogroup, briggsae_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "gene_id") %>%
+  separate(col = gene_id, into = paste("gene_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="gene_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$gene_id))
+
+#Merge 
+briggsae <- merge(briggsae, ortho_briggsae, by = "gene_id", all.x = TRUE)
+
+
+#inopinata
+ortho_inopinata <- orthogroups_na %>%  
+  select(Orthogroup, inopinata_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge 
+inopinata <- merge(inopinata, ortho_inopinata, by = "transcript_id", all.x = TRUE)
+
+
+#latens
+ortho_latens <- orthogroups_na %>%  
+  select(Orthogroup, latens_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "gene_id") %>%
+  separate(col = gene_id, into = paste("gene_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="gene_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$gene_id))
+
+#Merge 
+latens <- merge(latens, ortho_latens, by = "gene_id", all.x = TRUE)
+
+
+#nigoni
+ortho_nigoni <- orthogroups_na %>%  
+  select(Orthogroup, nigoni_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge 
+nigoni <- merge(nigoni, ortho_nigoni, by = "transcript_id", all.x = TRUE)
+
+
+#briggsae
+ortho_panamensis <- orthogroups_na %>%  
+  select(Orthogroup, panamensis_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge 
+panamensis <- merge(panamensis, ortho_panamensis, by = "transcript_id", all.x = TRUE)
+
+#briggsae
+ortho_remanei <- orthogroups_na %>%  
+  select(Orthogroup, remanei_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge 
+remanei <- merge(remanei, ortho_remanei, by = "transcript_id", all.x = TRUE)
+
+
+#briggsae
+ortho_tribulationis <- orthogroups_na %>%  
+  select(Orthogroup, tribulationis_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge 
+tribulationis <- merge(tribulationis, ortho_tribulationis, by = "transcript_id", all.x = TRUE)
+
+
+#briggsae
+ortho_tropicalis <- orthogroups_na %>%  
+  select(Orthogroup, tropicalis_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$transcript_id))
+
+#Merge 
+tropicalis <- merge(tropicalis, ortho_tropicalis, by = "transcript_id", all.x = TRUE)
+```
+
+```{r}
+## Import and tidy psl files (links) 
+
+#psl_becei
+psl_becei <- read.table(file = "../synteny/psl_liftover/caenorhabditis_becei.psl", sep= "\t")
+colnames(psl_becei) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_becei$seq_id <- paste("elegans",psl_becei$scaff, sep = "_")
+psl_becei$seq_id2 <- paste("becei",psl_becei$seq_id2, sep = "_")
+psl_becei <- psl_becei %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_becei$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+#psl_bovis
+psl_bovis <- read.table(file = "../synteny/psl_liftover/caenorhabditis_bovis.psl", sep= "\t")
+colnames(psl_bovis) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_bovis$seq_id <- paste("elegans",psl_bovis$scaff, sep = "_")
+psl_bovis$seq_id2 <- paste("bovis",psl_bovis$seq_id2, sep = "_")
+psl_bovis <- psl_bovis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_bovis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+ 
+#psl_briggsae
+psl_briggsae <- read.table(file = "../synteny/psl_liftover/caenorhabditis_briggsae.psl", sep= "\t")
+colnames(psl_briggsae) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_briggsae$seq_id <- paste("elegans",psl_briggsae$scaff, sep = "_")
+psl_briggsae$seq_id2 <- paste("briggsae",psl_briggsae$seq_id2, sep = "_")
+psl_briggsae <- psl_briggsae %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_briggsae$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+ 
+#psl_inopinata
+psl_inopinata <- read.table(file = "../synteny/psl_liftover/caenorhabditis_inopinata.psl", sep= "\t")
+colnames(psl_inopinata) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_inopinata$seq_id <- paste("elegans",psl_inopinata$scaff, sep = "_")
+psl_inopinata$seq_id2 <- paste("inopinata",psl_inopinata$seq_id2, sep = "_")
+psl_inopinata <- psl_inopinata %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_inopinata$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+ 
+#psl_latens
+psl_latens <- read.table(file = "../synteny/psl_liftover/caenorhabditis_latens.psl", sep= "\t")
+colnames(psl_latens) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_latens$seq_id <- paste("elegans",psl_latens$scaff, sep = "_")
+psl_latens$seq_id2 <- paste("latens",psl_latens$seq_id2, sep = "_")
+psl_latens <- psl_latens %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_latens$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+ 
+#psl_nigoni
+psl_nigoni <- read.table(file = "../synteny/psl_liftover/caenorhabditis_nigoni.psl", sep= "\t")
+colnames(psl_nigoni) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_nigoni$seq_id <- paste("elegans",psl_nigoni$scaff, sep = "_")
+psl_nigoni$seq_id2 <- paste("nigoni",psl_nigoni$seq_id2, sep = "_")
+psl_nigoni <- psl_nigoni %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_nigoni$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+ 
+#psl_panamensis
+psl_panamensis <- read.table(file = "../synteny/psl_liftover/caenorhabditis_panamensis.psl", sep= "\t")
+colnames(psl_panamensis) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_panamensis$seq_id <- paste("elegans",psl_panamensis$scaff, sep = "_")
+psl_panamensis$seq_id2 <- paste("panamensis",psl_panamensis$seq_id2, sep = "_")
+psl_panamensis <- psl_panamensis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_panamensis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+#psl_becei
+psl_becei <- read.table(file = "../synteny/psl_liftover/caenorhabditis_becei.psl", sep= "\t")
+colnames(psl_becei) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_becei$seq_id <- paste("elegans",psl_becei$scaff, sep = "_")
+psl_becei$seq_id2 <- paste("becei",psl_becei$seq_id2, sep = "_")
+psl_becei <- psl_becei %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_becei$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+
+#psl_remanei
+psl_remanei <- read.table(file = "../synteny/psl_liftover/caenorhabditis_remanei.psl", sep= "\t")
+colnames(psl_remanei) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_remanei$seq_id <- paste("elegans",psl_remanei$scaff, sep = "_")
+psl_remanei$seq_id2 <- paste("remanei",psl_remanei$seq_id2, sep = "_")
+psl_remanei <- psl_remanei %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_remanei$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+#psl_tribulationis
+psl_tribulationis <- read.table(file = "../synteny/psl_liftover/caenorhabditis_tribulationis.psl", sep= "\t")
+colnames(psl_tribulationis) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_tribulationis$seq_id <- paste("elegans",psl_tribulationis$scaff, sep = "_")
+psl_tribulationis$seq_id2 <- paste("tribulationis",psl_tribulationis$seq_id2, sep = "_")
+psl_tribulationis <- psl_tribulationis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_tribulationis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+#psl_tropicalis
+psl_tropicalis <- read.table(file = "../synteny/psl_liftover/caenorhabditis_tropicalis.psl", sep= "\t")
+colnames(psl_tropicalis) <- c("gene_id", "matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts") 
+psl_tropicalis$seq_id <- paste("elegans",psl_tropicalis$scaff, sep = "_")
+psl_tropicalis$seq_id2 <- paste("tribulationis",psl_tropicalis$seq_id2, sep = "_")
+psl_tropicalis <- psl_tropicalis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_tropicalis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+```
+
+```{r}
+## Create psl files of pairwise alignment of the tree 
+
+#Briggsae and Nigoni : already in the paf file 
+psl_briggsae_nigoni <- paf %>% 
+  filter(str_detect(seq_id,"caenorhabditis_briggsae") | str_detect(seq_id,"caenorhabditis_nigoni"))
+#Remanei and Latens : already in the paf file 
+psl_remanei_latens <- paf %>% 
+  filter(str_detect(seq_id,"caenorhabditis_latens") | str_detect(seq_id,"caenorhabditis_remanei"))
+#Panamensis and Becei: already in the paf file 
+psl_panamensis_becei <- paf %>% 
+  filter(str_detect(seq_id,"caenorhabditis_becei") | str_detect(seq_id,"caenorhabditis_panamensis"))
+
+ 
+```
+
+```{r}
+# bovis
+# becei 
+# 
+# panamensis
+# inopinata 
+# 
+# tropicalis
+# remanei
+# 
+# latens
+# tribulationis
+# 
+# tribulationis
+# briggsae
+
+## PLS files following the association of the tree
+psl_bovis_becei <- read.table(file = "../synteny/bovis_becei.psl", sep= "\t")
+colnames(psl_bovis_becei) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_bovis_becei$seq_id <- paste("bovis",psl_bovis_becei$scaff, sep = "_")
+psl_bovis_becei$seq_id2 <- paste("becei",psl_bovis_becei$seq_id2, sep = "_")
+psl_bovis_becei <- psl_bovis_becei %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_bovis_becei$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_panamensis_inopinata <- read.table(file = "../synteny/panamensis_inopinata.psl", sep= "\t")
+colnames(panamensis_inopinata_psl) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+panamensis_inopinata_psl$seq_id <- paste("panamensis",panamensis_inopinata_psl$scaff, sep = "_")
+panamensis_inopinata_psl$seq_id2 <- paste("inopinata",panamensis_inopinata_psl$seq_id2, sep = "_")
+panamensis_inopinata_psl <- panamensis_inopinata_psl %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", panamensis_inopinata_psl$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_tropicalis_remanei <- read.table(file = "../synteny/tropicalis_remanei.psl", sep= "\t")
+colnames(tropicalis_remanei_psl) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+tropicalis_remanei_psl$seq_id <- paste("tropicalis",tropicalis_remanei_psl$scaff, sep = "_")
+tropicalis_remanei_psl$seq_id2 <- paste("remanei",tropicalis_remanei_psl$seq_id2, sep = "_")
+tropicalis_remanei_psl <- tropicalis_remanei_psl %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", tropicalis_remanei_psl$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_latens_tribulationis <- read.table(file = "../synteny/latens_tribulationis.psl", sep= "\t")
+colnames(latens_tribulationis_psl) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+latens_tribulationis_psl$seq_id <- paste("latens",latens_tribulationis_psl$scaff, sep = "_")
+latens_tribulationis_psl$seq_id2 <- paste("tribulationis",latens_tribulationis_psl$seq_id2, sep = "_")
+latens_tribulationis_psl <- latens_tribulationis_psl %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", latens_tribulationis_psl$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_tribulationis_briggsae <- read.table(file = "../synteny/tribulationis_briggsae.psl", sep= "\t")
+colnames(tribulationis_briggsae_psl) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+tribulationis_briggsae_psl$seq_id <- paste("tribulationis",tribulationis_briggsae_psl$scaff, sep = "_")
+tribulationis_briggsae_psl$seq_id2 <- paste("briggsae",tribulationis_briggsae_psl$seq_id2, sep = "_")
+tribulationis_briggsae_psl <- tribulationis_briggsae_psl %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", tribulationis_briggsae_psl$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+# new arrivals 
+psl_becei_bovis <- read.table(file = "../synteny/psl_liftover/psl_becei_bovis.psl", sep= "\t")
+colnames(psl_becei_bovis) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_becei_bovis$seq_id <- paste("becei",psl_becei_bovis$scaff, sep = "_")
+psl_becei_bovis$seq_id2 <- paste("bovis",psl_becei_bovis$seq_id2, sep = "_")
+psl_becei_bovis <- psl_becei_bovis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_becei_bovis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_becei_panamensis <-  read.table(file = "../synteny/psl_liftover/psl_becei_panamensis.psl", sep= "\t")
+colnames(psl_becei_panamensis) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_becei_panamensis$seq_id <- paste("becei",psl_becei_panamensis$scaff, sep = "_")
+psl_becei_panamensis$seq_id2 <- paste("panamensis",psl_becei_panamensis$seq_id2, sep = "_")
+psl_becei_bovis <- psl_becei_panamensis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_becei_panamensis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_briggsae_nigoni <-  read.table(file = "../synteny/psl_liftover/psl_briggsae_nigoni.psl", sep= "\t")
+colnames(psl_briggsae_nigoni) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_briggsae_nigoni$seq_id <- paste("briggsae",psl_briggsae_nigoni$scaff, sep = "_")
+psl_briggsae_nigoni$seq_id2 <- paste("nigoni",psl_briggsae_nigoni$seq_id2, sep = "_")
+psl_briggsae_nigoni <- psl_briggsae_nigoni %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_briggsae_nigoni$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_briggsae_tribulationis <- read.table(file = "../synteny/psl_liftover/psl_briggsae_tribulationis.psl", sep= "\t")
+colnames(psl_briggsae_tribulationis) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_briggsae_tribulationis$seq_id <- paste("briggsae",psl_briggsae_tribulationis$scaff, sep = "_")
+psl_briggsae_tribulationis$seq_id2 <- paste("tribulationis",psl_briggsae_tribulationis$seq_id2, sep = "_")
+psl_briggsae_tribulationis <- psl_briggsae_tribulationis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_briggsae_tribulationis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+
+psl_inopinata_panamensis <- read.table(file = "../synteny/psl_liftover/psl_inopinata_panamensis.psl", sep= "\t")
+colnames(psl_inopinata_panamensis) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_inopinata_panamensis$seq_id <- paste("inopinata",psl_inopinata_panamensis$scaff, sep = "_")
+psl_inopinata_panamensis$seq_id2 <- paste("panamensis",psl_inopinata_panamensis$seq_id2, sep = "_")
+psl_inopinata_panamensis <- psl_inopinata_panamensis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_inopinata_panamensis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_nigoni_briggsae <- read.table(file = "../synteny/psl_liftover/psl_nigoni_briggsae.psl", sep= "\t")
+colnames(psl_nigoni_briggsae) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_nigoni_briggsae$seq_id <- paste("nigoni",psl_nigoni_briggsae$scaff, sep = "_")
+psl_nigoni_briggsae$seq_id2 <- paste("briggsae",psl_nigoni_briggsae$seq_id2, sep = "_")
+psl_nigoni_briggsae <- psl_nigoni_briggsae %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_nigoni_briggsae$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_panamensis_elegans <- read.table(file = "../synteny/psl_liftover/psl_panamensis_elegans.psl", sep= "\t")
+colnames(psl_panamensis_elegans) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_panamensis_elegans$seq_id <- paste("panamensis",psl_panamensis_elegans$scaff, sep = "_")
+psl_panamensis_elegans$seq_id2 <- paste("elegans",psl_panamensis_elegans$seq_id2, sep = "_")
+psl_panamensis_elegans <- psl_panamensis_elegans %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_panamensis_elegans$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_remanei_tropicalis <-  read.table(file = "../synteny/psl_liftover/psl_remanei_tropicalis.psl", sep= "\t")
+colnames(psl_remanei_tropicalis) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_remanei_tropicalis$seq_id <- paste("remanei",psl_remanei_tropicalis$scaff, sep = "_")
+psl_remanei_tropicalis$seq_id2 <- paste("tropicalis",psl_remanei_tropicalis$seq_id2, sep = "_")
+psl_remanei_tropicalis <- psl_remanei_tropicalis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_remanei_tropicalis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+
+psl_tribulationis_latens <- read.table(file = "../synteny/psl_liftover/psl_tribulationis_latens.psl", sep= "\t")
+colnames(psl_tribulationis_latens) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_tribulationis_latens$seq_id <- paste("tribulationis",psl_tribulationis_latens$scaff, sep = "_")
+psl_tribulationis_latens$seq_id2 <- paste("latens",psl_tribulationis_latens$seq_id2, sep = "_")
+psl_tribulationis_latens <- psl_tribulationis_latens %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_tribulationis_latens$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_tropicalis_elegans <- read.table(file = "../synteny/psl_liftover/psl_tropicalis_elegans.psl", sep= "\t")
+colnames(psl_tropicalis_elegans) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_tropicalis_elegans$seq_id <- paste("tropicalis",psl_tropicalis_elegans$scaff, sep = "_")
+psl_tropicalis_elegans$seq_id2 <- paste("elegans",psl_tropicalis_elegans$seq_id2, sep = "_")
+psl_tropicalis_elegans <- psl_tropicalis_elegans %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_tropicalis_elegans$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_latens_remanei <- read.table(file = "../synteny/psl_liftover/psl_latens_remanei.psl", sep= "\t")
+colnames(psl_latens_remanei) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","qSize","start","end","seq_id2","tSize","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_latens_remanei$seq_id <- paste("latens",psl_latens_remanei$scaff, sep = "_")
+psl_latens_remanei$seq_id2 <- paste("remanei",psl_latens_remanei$seq_id2, sep = "_")
+psl_latens_remanei <- psl_latens_remanei %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_latens_remanei$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+```
+
+```{r}
+## Take the coordinates of each 10 species based on the pairwise alignment with c.elegans
+ids <- elegans[, c("gene_id", "transcript_id")] %>%  as.data.frame()
+ids_ortho <- merge(ids, ortho_elegans, by = "gene_id", all.x = TRUE)
+ids_ortho <- ids_ortho[, -1]
+colnames(ids_ortho)[1] <- "gene_id"
+
+genes_bovis <- psl_bovis[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_bovis <- merge(genes_bovis,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_bovis <-  genes_bovis %>% distinct() %>% mutate(bin_id = "bovis")
+type <- bovis[, c("transcript_id", "type")]
+colnames(type)[1] <- "gene_id"
+genes_bovis <-  merge(genes_bovis, type)
+
+genes_becei <- psl_becei[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_becei <- merge(genes_becei,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_becei <-  genes_becei %>%  distinct() %>% mutate(bin_id = "becei")
+
+genes_panamensis <- psl_panamensis[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_panamensis <- merge(genes_panamensis,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_panamensis <-  genes_panamensis %>%  distinct() %>% mutate(bin_id = "panamensis")
+
+genes_inopinata <- psl_inopinata[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_inopinata <- merge(genes_inopinata,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_inopinata <-  genes_inopinata %>%  distinct() %>% mutate(bin_id = "inopinata")
+
+genes_tropicalis <- psl_tropicalis[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_tropicalis <- merge(genes_tropicalis,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_tropicalis <-  genes_tropicalis %>%  distinct() %>% mutate(bin_id = "tropicalis")
+
+genes_remanei <- psl_remanei[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_remanei <- merge(genes_remanei,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_remanei <-  genes_remanei %>%  distinct() %>% mutate(bin_id = "remanei")
+
+genes_latens <- psl_latens[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_latens <- merge(genes_latens,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_latens <-  genes_latens %>%  distinct() %>% mutate(bin_id = "latens")
+
+genes_tribulationis <- psl_tribulationis[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_tribulationis <- merge(genes_tribulationis,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_tribulationis <-  genes_tribulationis %>%  distinct() %>% mutate(bin_id = "tribulationis")
+
+genes_briggsae <- psl_briggsae[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_briggsae <- merge(genes_briggsae,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_briggsae <-  genes_briggsae %>%  distinct() %>% mutate(bin_id = "briggsae")
+
+genes_nigoni <- psl_nigoni[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_nigoni <- merge(genes_nigoni,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_nigoni <-  genes_nigoni %>%  distinct() %>% mutate(bin_id = "nigoni")
+
+genes_elegans <- elegans[,c("transcript_id", "seq_id", "start", "end",  "strand", "Orthogroup")]
+genes_elegans <-  genes_elegans  %>%  distinct() %>% mutate(bin_id = "elegans") %>% rename(Orthogroups = "Orthogroup", gene_id = "transcript_id")
+
+new_genes <- rbind(genes_bovis, genes_becei, genes_panamensis, genes_inopinata, genes_tropicalis, genes_remanei, genes_latens, genes_tribulationis, genes_briggsae, genes_nigoni)
+colnames(new_genes) <- c("gene_id", "seq_id", "start", "end", "length", "strand", "Orthogroups", "bin_id")
+
+```
+```{r}
+## Links data frames
+link_1 <- bovis_becei_psl[, c( "start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_2 <- panamensis_becei_psl[,c( "start", "end","seq_id", "start2", "end2", "seq_id2") ]
+link_3 <- panamensis_inopinata_psl[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_4 <- psl_inopinata[, c( "start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_5 <- psl_tropicalis[, c( "start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_6 <- tropicalis_remanei_psl[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_7 <- remanei_latens_psl[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_8 <- latens_tribulationis_psl[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_9 <- tribulationis_briggsae_psl[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_10 <- briggsae_nigoni_psl[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+
+
+#Links 2
+link_1 <- psl_becei_bovis[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_2 <- panamensis_becei_psl[,c( "start", "end","seq_id", "start2", "end2", "seq_id2") ]
+link_3 <- psl_inopinata_panamensis[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_4 <- psl_inopinata[, c( "start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_5 <- psl_tropicalis_elegans[, c( "start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_6 <- psl_remanei_tropicalis[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_7 <- psl_latens_remanei[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_8 <- psl_tribulationis_latens[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_9 <- psl_briggsae_tribulationis[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+link_10 <- psl_nigoni_briggsae[, c("start", "end","seq_id", "start2", "end2", "seq_id2")]
+
+
+
+
+```
+
+
+```{r}
+## Essential information to know 
+
+#PSL format 
+
+# Be aware that the coordinates for a negative strand in a dna query PSL line are handled in a special way. In the qStart and qEnd fields, the coordinates indicate the position where the query matches from the point of view of the forward strand, even when the match is on the reverse strand. However, in the qStarts list, the coordinates are reversed.
+
+# Essentially, the minus strand blockSizes and qStarts are what you would get if you reverse-complemented the query. However, the qStart and qEnd are not reversed. Use the following formulas to convert one to the other:
+#   
+# Negative-strand-coordinate-qStart = qSize - qEnd   = 61 - 56 =  5
+# Negative-strand-coordinate-qEnd   = qSize - qStart = 61 -  4 = 57
+
+
+# Gggenomes 
+# seqs: sequences such as contigs or chromosomes
+# required: seq_id,length
+# recognized: bin_id,start,end,strand
+
+# feats: such as genes, SNPs, repeats, …
+# required: seq_id,start,end
+# recognized: strand,bin_id,feat_id,introns
+
+# links: connections between two locations from different sequences
+# required: seq_id,seq_id2
+# recognized: start,end,bin_id,start2,end2,bin_id2,strand
+```
+
+```{r}
+## First test with gggenomes 
+
+#Let's align elegans and becei 
+
+#Take the most important colummns 
+genes_1 <- bovis[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_2 <- becei[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_3 <- panamensis[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_4 <- inopinata[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_5 <- elegans[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_6 <- tropicalis[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_7 <- remanei[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_8 <- latens[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_9 <- tribulationis[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_10 <- briggsae[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+genes_11 <- nigoni[, c("scaff","type", "start", "end", "strand", "seq_id", "Orthogroup")]
+
+genes_df <- rbind(genes_1,genes_2, genes_3,genes_4,genes_5,genes_6,genes_7,genes_8,genes_9,genes_10,genes_11)
+
+genes_1 <- bovis[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_2 <- becei[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_3 <- panamensis[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_4 <- inopinata[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_5 <- elegans[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_6 <- tropicalis[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_7 <- remanei[,c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_8 <- latens[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_9 <- tribulationis[, c("seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_10 <- briggsae[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+genes_11 <- nigoni[, c( "seq_id","scaff","type", "start", "end","width","strand", "transcript_id", "gene_id","Orthogroup")]
+
+genes_df <- rbind(genes_1,genes_2, genes_3,genes_4,genes_5,genes_6,genes_7,genes_8,genes_9,genes_10)
+
+#Create the genes dataframe 
+genes <- rbind(genes_1, genes_2)
+
+sub_genes <- genes %>%
+  group_by(scaff) %>% 
+  filter(Orthogroup == "OG0001197" )
+
+sub_genes <- genes %>%
+  filter(start < 10000 & end < 10000 )
+
+sub_genes <- genes %>%
+  filter(gene_id == "CSP29.g10")
+
+sub_links <- filter(psl_becei, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+geom_f <- gggenomes(genes = sub_genes) + 
+  geom_gene() +
+  geom_seq() +
+  geom_bin_label() +
+  geom_gene(aes(fill=Orthogroup), shape = 0)
+
+geom_f
+```
+
+```{r}
+##Let's create the tree 
+
+#Genes
+new_genes <- rbind(genes_bovis, genes_becei, genes_panamensis, genes_inopinata, genes_tropicalis)
+colnames(new_genes) <- c("gene_id", "seq_id", "start", "end", "length" ,"strand", "Orthogroups", "bin_id")
+new_genes <- new_genes %>% 
+  select(-length)
+new_genes <- rbind(new_genes, genes_elegans)
+
+#Subsetting by orthogroups 
+sub_genes <- new_genes %>%
+  group_by(bin_id) %>%
+  filter(Orthogroups == "OG0002767" | Orthogroups == "OG0009988" )
+
+#Substetting by length
+sub_genes <- new_genes %>%
+  filter(start < 100 & end < 100 )
+
+#Subsetting by gene ID 
+sub_genes <-new_genes %>% 
+  group_by(bin_id) %>% 
+  filter(gene_id =="2RSSE.1a.1" | gene_id =="4R79.1a.1" | gene_id =="AC3.10.1")
+
+sub_genes_df <- genes_df %>% 
+  group_by(bin_id) %>% 
+  filter(gene_id =="2RSSE.1a.1" | gene_id =="4R79.1a.1" | gene_id =="AC3.10.1")
+  
+#sub links
+link_df <- rbind(link_1, link_2, link_3,link_4,link_5)
+sub_link <- link_df %>%
+  filter(seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+#Plot 
+geom_f <- gggenomes(genes = sub_genes, links=  sub_link) +
+  geom_gene(aes(fill=Orthogroups), shape = 0)+
+  geom_seq() +
+  geom_bin_label() +
+  geom_link()
+
+geom_f
+
+```
+```{r}
+g <- rbind(genes_becei, genes_bovis) 
+
+
+gggenomes(genes = g, links = link_1)+
+  geom_seq()+
+  geom_gene()+
+  geom_link()+
+  geom_seq_label()
+
+gggenomes(genes = genes_df, feats = sub_genes, links = sub_link)+
+  geom_seq()+
+  geom_gene()+
+  geom_link()+
+  geom_bin_label()
+
+
+```
+```{r}
+
+#Stelect the interesting columns 
+genes_1 <- bovis[, c( "seq_id","scaff","type", "start", "end","width" ,"transcript_id", "gene_id","Orthogroup")]
+genes_2 <- becei[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_3 <- panamensis[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_4 <- inopinata[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_5 <- elegans[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_6 <- tropicalis[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_7 <- remanei[,c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_8 <- latens[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_9 <- tribulationis[, c("seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_10 <- briggsae[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+genes_11 <- nigoni[, c( "seq_id","scaff","type", "start", "end","width", "transcript_id", "gene_id","Orthogroup")]
+
+#Rename the psl columns so they are the same as the previous ones
+test_1 <- psl_becei_bovis[, c("scaff", "qSize", "start", "end", "seq_id" "tSize", "start2", "end2", "seq_id2")]
+test_2 <- psl_bovis_becei[, c("scaff", "qSize", "start", "end", "seq_id" "tSize", "start2", "end2", "seq_id2")]
+
+colnames(test_1)[c(2, 7)] <- c("width", "width2")
+colnames(test_1)[c(2, 7)] <- c("width", "width2")
+
+#Try in gggenomes 
+
+#genes
+gene <- merge(test_1, test_2)
+#Substetting by length
+sub_genes <- new_genes %>%
+  filter(start < 100 & end < 100 )
+
+  
+#feats
+link_1 <- psl_becei_bovis %>%  rename(width = "qSize", width2 = "tSize")
+link_2 <- psl_bovis_becei %>%  rename(width = "qSize", width2 = "tSize")
+link_1 <- psl_becei_bovis[, c( "start", "end","width", "seq_id", "start2", "end2","width2","seq_id2")]
+link_2 <- bovis_becei_psl[, c(  "start", "end","width", "seq_id", "start2", "end2","width2","seq_id2")]
+
+
+
+#links 
+
+#plot
+
+
+
+```
+

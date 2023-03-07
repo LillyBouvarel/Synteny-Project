@@ -1,0 +1,11 @@
+---
+title: "Emales examples"
+author: "Lilly"
+date: "2023-01-26"
+output: html_document
+---
+
+```{r}
+data(package="gggenomes")
+```
+

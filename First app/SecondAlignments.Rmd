@@ -1,0 +1,383 @@
+---
+title: "SecondAlignments"
+author: "Lilly"
+date: "2023-01-30"
+output: html_document
+---
+
+```{r}
+library(gggenomes)
+```
+
+```{r}
+## Read files 
+
+#read python script prepared data
+ava = read.table(file = "ele_X_1050000_1150000.nogap.ava")
+seq = read.table(file = "ele_X_1050000_1150000.seq", header = T)
+gene = read.table(file = "ele_X_1050000_1150000.nogap.ana")
+```
+
+```{r}
+## Data frames manipulation (base to work with)
+
+#For the seq : creating Seq length and seq_ID (length, seq_ID)
+colnames(seq) = c("species", "scaff", "start", "end")
+seq$length = as.numeric(seq$end) - as.numeric(seq$start) 
+seq$seq_id = paste(seq$species, seq$scaff ,sep = "_")
+
+#For the gene : creating seq_id, and rename the columns (seq_ID, start, end)
+colnames(gene) = c("species", "scaff", "type", "start", "end", "strand","name")
+gene$seq_id = paste(gene$species, gene$scaff ,sep = "_")
+#gene$type[which(gene$type %in% "gene")] =  rep("CDS", 9) 
+## if we want plot gene, only CDS region has color block
+
+#For the links : we need seq_id, start, end and seq_id2, start2, end2 to link to sequences with each other
+colnames(ava) = c("species1", "scaffold1", "start", "end", "strand", 
+                  "species2", "scaffold2", "start2", "end2","strand2")
+ava$seq_id = paste(ava$species1, ava$scaffold1, sep = "_")
+ava$seq_id2 = paste(ava$species2, ava$scaffold2, sep = "_")
+
+#To keep only the seq length that have the same seq_id that the sequences in the seq file 
+ava$length = seq$length[match(ava$seq_id, seq$seq_id)]
+ava$length2 = seq$length[match(ava$seq_id2, seq$seq_id)]
+
+#Keep the useful columns (seq_id, length, start, end, strand, seq_id2, length2, start2, end2)
+ava_sub = ava[ ,colnames(emale_ava)[2:10]] 
+```
+
+
+```{r}
+## Subsetting :  Longest sequence per species 
+#subset data track (seq data) : get the longest sequence per species 
+by_species_single_seq <- seq %>% group_by(species) %>% 
+  arrange(species, desc(length)) %>% 
+  filter(row_number()==1)
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% by_species_single_seq$seq_id & seq_id2 %in% by_species_single_seq$seq_id)
+sub_gene = filter(gene, seq_id %in% by_species_single_seq$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+###gene dataset test
+test_gene = sub_gene %>% group_by(species) %>% arrange(species, scaff, start) %>% filter(between(row_number(), 1,10))
+
+#No differenciation between gene and CDS 
+p <- gggenomes(genes = test_gene, links = sub_ava_no_dup) + 
+  geom_gene() + 
+  geom_seq()+
+  geom_seq_label()+
+  geom_link()
+p
+```
+```{r}
+#No differenciation between gene and CDS 
+p <- gggenomes(genes = test_gene, links = sub_ava_no_dup) + 
+  geom_link()+
+  geom_seq()+
+  geom_gene() + 
+  geom_seq_label()
+  
+p
+```
+
+
+```{r}
+## Subsetting : shortest sequences among species 
+
+#subset data track (seq data) : get the shortest sequence per species 
+shortest_seq_per_species <- seq %>% group_by(species) %>% 
+  arrange(species, length) %>% 
+  filter(row_number()==1)
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% shortest_seq_per_species$seq_id & seq_id2 %in% shortest_seq_per_species$seq_id)
+sub_gene = filter(gene, seq_id %in% shortest_seq_per_species$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Filter genes 
+manipu_gene = sub_gene %>% filter(type == "gene")
+manipu_cds = sub_gene %>% filter(type == "CDS")
+
+#Need to create gggenomes tracks : seqs, genes, links, CDS knowing that geom_gene do not recognize the diff between cds and gene in column "type"
+p_total <- gggenomes( genes = manipu_gene) +
+  geom_gene(position = "strand")
+p_total
+
+```
+
+```{r}
+## Subsetting : N4 alignment (C.elegans and C.inopinata)
+
+#subset data track (seq data) : get only C.elegans and C.inopinata 
+elegans_inopinata <- seq %>% group_by(species) %>% filter(species %in% c("elegans","inopinata"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% elegans_inopinata$seq_id & seq_id2 %in% elegans_inopinata$seq_id)
+sub_gene = filter(gene, seq_id %in% elegans_inopinata$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Filter genes 
+manipu_gene = sub_gene %>% filter(type == "gene")
+manipu_cds = sub_gene %>% filter(type == "CDS")
+
+#Need to create gggenomes tracks : seqs, genes, links, CDS knowing that geom_gene do not recognize the diff between cds and gene in column "type"
+p_total <- gggenomes(links = sub_ava_no_dup, feats = list(manipu_gene, manipu_cds)) + 
+  geom_seq() +
+  geom_bin_label() +
+  geom_feat()+
+  geom_link() 
+
+p_total
+
+```
+```{r}
+p_total <- gggenomes(genes = elegans_inopinata,links = sub_ava_no_dup) + 
+  geom_seq() +
+  geom_bin_label() +
+  geom_gene() +
+  geom_link()
+
+p_total
+```
+
+```{r}
+p_total <- gggenomes(genes = manipu_gene,links = sub_ava_no_dup, feats = list(manipu_cds)) + 
+  geom_seq() +
+  geom_bin_label() +
+  geom_gene() +
+  geom_link() +
+  geom_feat() +
+  geom_feat(data = feats(manipu_cds), color = "mediumturquoise")
+
+p_total
+```
+```{r}
+p_total <- gggenomes(links = sub_ava_no_dup, feats = list(manipu_gene, manipu_cds)) +
+  geom_seq() +
+  geom_seq_label() +
+  geom_feat()+
+  geom_link()+
+  geom_feat(data = feats(manipu_cds), color = "mediumturquoise")+
+  geom_feat(data = feats(manipu_gene), color = "brown1")
+
+p_total
+```
+
+
+
+```{r}
+## Subsetting : N3 alignment (C.elegans and C.tropicalis)
+
+#subset data track (seq data) : get only C.elegans and C.inopinata 
+elegans_tropicalis <- seq %>% group_by(species) %>% filter(species %in% c("elegans","tropicalis"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% elegans_tropicalis$seq_id & seq_id2 %in% elegans_tropicalis$seq_id)
+sub_gene = filter(gene, seq_id %in% elegans_tropicalis$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Filter genes 
+manipu_gene = sub_gene %>% filter(type == "gene")
+manipu_cds = sub_gene %>% filter(type == "CDS")
+#Need to create gggenomes tracks : seqs, genes, links, CDS knowing that geom_gene do not recognize the diff between cds and gene in column "type"
+
+p_total <- gggenomes(links = sub_ava_no_dup, feats = list(manipu_gene, manipu_cds)) +
+
+geom_seq() +
+  geom_bin_label() +
+  geom_feat()+
+  geom_link() 
+
+p_total
+```
+
+```{r}
+## Just take the seqs < 150000 pb 
+
+#subset data track (seq data)
+seqs_150k <- seq %>% group_by(species) %>% filter(length <= 150000)
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% seqs_150k$seq_id & seq_id2 %in% seqs_150k$seq_id)
+sub_gene = filter(gene, seq_id %in% seqs_150k$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Filter genes 
+manipu_gene = sub_gene %>% filter(type == "gene")
+manipu_cds = sub_gene %>% filter(type == "CDS")
+#Need to create gggenomes tracks : seqs, genes, links, CDS knowing that geom_gene do not recognize the diff between cds and gene in column "type"
+
+p_total <- gggenomes(links = sub_ava_no_dup, feats = list(manipu_gene, manipu_cds)) +
+  geom_seq() +
+  geom_seq_label() +
+  geom_feat()+
+  geom_link()+
+  geom_feat(data = feats(manipu_cds), color = "mediumturquoise")+
+  geom_feat(data = feats(manipu_gene), color = "brown1")
+
+p_total
+```
+```{r}
+p_total %>% track_info()
+p_total %>% pull_seqs()
+p_total %>% pull_feats()
+
+```
+```{r}
+## Subsetting : take the min length genes by species
+min_gene <-  gene %>% group_by(species) %>% filter((end - start) == min(end-start))
+
+#Recreating the other dataframe (gene and links)
+sub_ava_dup <- ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup <- ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Filter genes 
+manipu_gene <- gene %>% filter(type == "gene")
+manipu_cds <- gene %>% filter(type == "CDS")
+
+#Need to create gggenomes tracks : seqs, genes, links, CDS knowing that geom_gene do not recognize the diff between cds and gene in column "type"
+p_total <- gggenomes(links = sub_ava_no_dup, feats = list(manipu_gene, manipu_cds)) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_feat()+
+  geom_link()+
+  geom_feat(data = feats(manipu_gene), color = "mediumturquoise")+
+  geom_feat(data = feats(manipu_cds), color = "brown1")
+
+p_total
+```
+```{r}
+## subsetting : take only the species that contain one sequence
+
+#subset data track (seq data)
+species_1 <- seq %>% group_by(species) %>% filter(length(species) == 1)
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% species_1$seq_id & seq_id2 %in%  species_1$seq_id)
+sub_gene <- filter(gene, seq_id %in% species_1$seq_id)
+sub_ava_dup <- sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup <- sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Filter genes 
+manipu_gene <- sub_gene %>% filter(type == "gene")
+manipu_cds <- sub_gene %>% filter(type == "CDS")
+```
+
+
+```{r}
+#Need to create gggenomes tracks : seqs, genes, links, CDS knowing that geom_gene do not recognize the diff between cds and gene in column "type"
+p_total <- gggenomes(links = sub_ava_no_dup, feats = list(manipu_gene, manipu_cds)) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_feat()+
+  geom_link()+
+  geom_feat(data = feats(manipu_gene), color = "mediumturquoise")+
+  geom_feat(data = feats(manipu_cds), color = "brown1")
+
+p_total
+
+#Filter the genes/cds length such as length < 2.5k
+gene_under_25k <- manipu_gene %>% filter((end - start) < 2500)
+cds_under_25k <- manipu_cds %>% filter((end - start) < 2500)
+
+p_total <- gggenomes(links = sub_ava_no_dup, feats = list(gene_under_25k, cds_under_25k)) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_feat()+
+  geom_link()+
+  geom_feat(data = feats(gene_under_25k), color = "mediumturquoise")+
+  geom_feat(data = feats(cds_under_25k), color = "brown1")
+
+p_total
+```
+
+
+```{r}
+## Subsetting: keep only the genes and seqs located under 25000
+
+#Keep only the genes located under 25k
+gene_located_under_25k <- gene %>% group_by(type) %>% filter(type == "gene", start <25000)
+cds_located_under_25k <-  gene %>% group_by(type) %>% filter(type == "CDS", start <25000)
+
+#Filter seq with the genes you found 
+seqs_from_genes_under_25k <- seq %>% filter(species %in% gene_located_under_25k$species, scaff %in% gene_located_under_25k$scaff)
+
+#Replace the end by 25000 for each seqs 
+seqs_from_genes_under_25k$end <- 25000
+
+#Create a gggenomes object 
+p_total <- gggenomes(seqs = seqs_from_genes_under_25k, genes = gene_located_under_25k,feats = list(cds_located_under_25k)) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_gene()+
+  geom_feat(data = feats(cds_located_under_25k), color = "brown1")
+
+p_total
+
+#Create a gggenomes object 
+p_total <- gggenomes(seqs = seqs_from_genes_under_25k, genes = gene_located_under_25k) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_gene()
+p_total
+```
+
+
+```{r}
+p_total <- gggenomes(seqs = seqs_from_genes_under_25k) +
+  geom_seq()+
+  geom_bin_label()
+
+p_total
+```
+
+```{r}
+p_total <- gggenomes(genes = gene_located_under_25k, feats = list(cds_located_under_25k)) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_feat(data = feats(cds_located_under_25k), color = "brown1")
+
+p_total
+```
+
+
+
+
+```{r}
+## Subsetting : display every seqs from 1 to 25000 (they should have all the same length)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

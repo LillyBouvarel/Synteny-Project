@@ -1,0 +1,92 @@
+---
+title: "Bases"
+author: "Lilly"
+date: "2023-02-03"
+output: html_document
+---
+
+```{r}
+## Read files 
+
+#read python script prepared data
+ava = read.table(file = "ele_X_1050000_1150000.nogap.ava")
+seq = read.table(file = "ele_X_1050000_1150000.seq", header = T)
+gene = read.table(file = "ele_X_1050000_1150000.nogap.ana")
+```
+
+```{r}
+## Data frames manipulation (base to work with)
+
+#For the seq : creating Seq length and seq_ID (length, seq_ID)
+colnames(seq) = c("species", "scaff", "start", "end")
+seq$length = as.numeric(seq$end) - as.numeric(seq$start) 
+seq$seq_id = paste(seq$species, seq$scaff ,sep = "_")
+
+#For the gene : creating seq_id, and rename the columns (seq_ID, start, end)
+colnames(gene) = c("species", "scaff", "type", "start", "end", "strand","name")
+gene$seq_id = paste(gene$species, gene$scaff ,sep = "_")
+#gene$type[which(gene$type %in% "gene")] =  rep("CDS", 9) 
+## if we want plot gene, only CDS region has color block
+
+#For the links : we need seq_id, start, end and seq_id2, start2, end2 to link to sequences with each other
+colnames(ava) = c("species1", "scaffold1", "start", "end", "strand", 
+                  "species2", "scaffold2", "start2", "end2","strand2")
+ava$seq_id = paste(ava$species1, ava$scaffold1, sep = "_")
+ava$seq_id2 = paste(ava$species2, ava$scaffold2, sep = "_")
+
+#To keep only the seq length that have the same seq_id that the sequences in the seq file 
+ava$length = seq$length[match(ava$seq_id, seq$seq_id)]
+ava$length2 = seq$length[match(ava$seq_id2, seq$seq_id)]
+
+#Keep the useful columns (seq_id, length, start, end, strand, seq_id2, length2, start2, end2)
+ava_sub = ava[ ,colnames(emale_ava)[2:10]] 
+```
+
+
+```{r}
+## Basics manipulation with inopinata sequence
+inopinata <- seq %>% filter(species %in% "inopinata")
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% inopinata$seq_id & seq_id2 %in% inopinata$seq_id)
+sub_gene = filter(gene, seq_id %in% inopinata$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+
+#Geom_gene 
+geom <- gggenomes(genes = sub_gene) + 
+  geom_gene()
+geom
+
+#All features in the "genes" regardless of type
+geom_feat <- gggenomes(genes = sub_gene)  +
+  geom_feat(data=feats(genes)) 
+geom_feat
+
+ # control which types are returned from the track
+geom_types <- gggenomes(genes = sub_gene)  +
+  geom_gene(aes(y=1.1), data=genes(.gene_types = c("CDS", "gene")))
+geom_types
+
+# control which types can have introns : no introns so no introns lines 
+geom_types_intron_types <- gggenomes(genes = sub_gene) +
+  geom_gene(aes(y=1.2, yend=1.2), data=genes(.gene_types = c("CDS", "gene")),  intron_types = "gene")
+#intron types : draw introns only on the selected type, by default : "CDS" 
+geom_types_intron_types
+
+```
+```{r}
+#Position : does not change anything because it's only one seq
+geom_gene_position <- gggenomes(genes = sub_gene) + 
+  geom_gene(position="pile")
+geom_gene_position
+
+#aes, fill, type : color CDS in pink (by default)
+geom_gene_aes_fill <- gggenomes(genes = sub_gene) + 
+  geom_gene(aes(fill=type), shape = 0, intron_shape = 0, color="white") #shape = 0 : deactivates arrow-shaped tips, color : color the outline,  intron_shape = 0 : for straight lines between exons
+geom_gene_aes_fill
+
+```
+

@@ -1,0 +1,144 @@
+---
+title: "functions"
+author: "Lilly"
+date: "2023-03-06"
+output: html_document
+---
+
+```{r}
+library(rtracklayer)
+library(tidyverse)
+library(gggenomes)
+```
+
+```{r}
+## Functions to subset data
+
+#Genes and links 
+
+#Subsetting by length from start to end 
+subset_by_length <- function(g = genes, min, max){
+  sub_genes <- g %>% filter(between(start, min, max) & between(end, min, max))
+  return(sub_genes)
+}
+
+#Subsetting by gene ID (C.elegans)
+select_by_genes <- function(g = genes,list_genes){
+    sub_genes <- g %>% group_by(seq_id) %>% filter(gene_id %in% list_genes)
+    return(sub_genes)
+}
+
+#Subsetting by gene ID and start/end 
+select_by_both <- function(g = genes, list_genes, min, max){
+    sub_genes <- g %>% group_by(seq_id) %>% filter(gene_id %in% list_genes & between(start, min, max) & between(end, min, max))
+    return(sub_genes)
+}
+```
+
+```{r}
+## Functions to subset data
+
+#subsetting in moving right and left (100 pb move)
+move_right <- function(genes){
+    sub_genes <- genes %>% filter(between(start, min(start)+100, max(start)+100) & between(end, min(end)+100,max(end)+100))
+    return(sub_genes)
+}
+
+move_left <- function(genes){
+  sub_genes <- genes %>% filter(between(start, min(start)-100, max(start)-100) & between(end, min(end)-100, max(end)-100))
+  return(sub_genes)
+}
+
+#subsetting by chromosome on C.elegans
+select_by_chromosomes <- function(scaff, genes){
+  sub_genes <- genes %>% filter(scaff %in% scaff)
+  return(sub_genes)
+}
+
+#Subsetting by species 
+select_by_species <- function(species, genes){
+  sub_genes <- genes %>% filter(bin_id %in% species)
+  return(sub_genes)
+}
+
+#genes = start, end, gene_id, scaff, bin_id, seq_id, orthogroups, strand, length 
+#links = start, end, seq_id, start2, end2, seq_id2
+```
+```{r}
+## user singletons 
+user_singletons <- function(g = genes, links_df = links_df_1, list_genes = NULL, min = NULL, max = NULL){
+  
+  if(is.null(list_genes) & (!is.null(min) & !is.null(max))){
+    
+    sub_genes <- subset_by_length( min, max)
+    sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+    
+  }else if(!is.null(list_genes) & (is.null(min) & is.null(max))){
+    
+		sub_genes <- select_by_genes(g= genes, list_genes)
+		sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+	}else if(!is.null(list_genes) & (!is.null(max) & !is.null(min))){
+	  
+	  sub_genes <- select_by_both(list_genes, min, max)
+	  sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+	  
+	}else{
+		print("ERROR : you must fill something")
+	}
+
+  ## Gggenomes
+  
+  #Plot 1 
+  geom_1 <- gggenomes(genes = sub_genes) +
+    geom_gene()+
+    geom_seq()+
+    geom_bin_label() +
+    geom_seq_label()
+  return(geom_1)
+}
+```
+
+
+```{r}
+## user select
+
+user_select <- function(g= genes, list_genes = NULL, min = NULL, max = NULL){
+  
+	if(is.null(list_genes) & (!is.null(min)  & !is.null(max))){
+		sub_genes <- subset_by_length(g = genes, min, max)
+		sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+	}else if(!is.null(list_genes) & (is.null(min) & is.null(max))){
+		sub_genes <- select_by_genes(g = genes, list_genes)
+		sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+	}else if(!is.null(list_genes) & !is.null(max) & !is.null(min)){
+		sub_genes <- select_by_both(g = genes, list_genes, min, max)
+	  sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+	}else{
+		print("ERROR : you must fill something")
+	}
+} 
+```
+
+
+```{r}
+# User Nodes 
+user_nodes(list_genes = NULL, list_nodes = NULL, min = null, max = null){
+  
+	if(is.null(list_genes) & !is.null(list_nodes) & (!is.null(min) & !is.null(max))){
+		subset_by_nodes_and_length(list_nodes, min, max)
+	  
+	}else if(!is.null(list_nodes) & !is.null(list_genes) & (is.null(min) & is.null(max))){
+		select_by_genes(list_nodes, list_genes)
+	  
+	}else if(is.null(list_genes) & !is.null(list_nodes) & (is.null(min) & is.null(max))){
+		select_by_nodes(list_nodes)
+	  
+	}else{
+		print("ERROR : you must fill something")
+	}
+}
+```

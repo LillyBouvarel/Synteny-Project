@@ -1,0 +1,370 @@
+---
+title: "gtf_to_ava"
+author: "Lilly"
+date: "2023-02-06"
+output: html_document
+---
+```{r}
+library(gggenomes)
+library(tidyverse)
+library(stringr)
+```
+
+```{r}
+## Import gtf files 
+elegans <- read.csv(file = "../synteny/caenorhabditis_elegans.PRJNA13758.WBPS16.canonical_geneset.gtf", sep ="\t")
+becei <- read.csv(file="../synteny/caenorhabditis_becei.PRJEB28243.WBPS16.canonical_geneset.gtf")
+bovis <- read.csv(file="../synteny/caenorhabditis_bovis.PRJEB34497.WBPS16.canonical_geneset.gtf", sep = "\t")
+briggsae <- read.csv(file="../synteny/caenorhabditis_briggsae.PRJNA10731.WBPS16.canonical_geneset.gtf", sep = "\t")
+inopinata <- read.csv(file="../synteny/caenorhabditis_inopinata.PRJDB5687.WBPS16.canonical_geneset.tgf", sep = "\t")
+latens <- read.csv(file="../synteny/caenorhabditis_latens.PRJNA248912.WBPS16.canonical_geneset.gtf", sep = "\t")
+nigoni <- read.csv(file="../synteny/caenorhabditis_nigoni.PRJNA384657.WBPS16.canonical_geneset.gtf", sep = "\t")
+panamensis <- read.csv(file="../synteny/caenorhabditis_panamensis.PRJEB28259.WBPS16.canonical_geneset.gtf", sep = "\t")
+remanei <- read.csv(file="../synteny/caenorhabditis_remanei.PRJNA577507.WBPS16.canonical_geneset.gtf", sep = "\t")
+tribulationis <- read.csv(file="../synteny/caenorhabditis_tribulationis.PRJEB12608.WBPS16.canonical_geneset.gtf", sep = "\t")
+tropicalis <- read.csv(file="../synteny/caenorhabditis_tropicalis.PRJNA53597.WBPS16.canonical_geneset.gtf", sep = "\t")
+
+```
+
+```{r}
+## Rename columns 
+colnames(elegans)[c(1,3,4,5,6,7,8,9)] <- c("scaffold", "type",  "start", "end", "score", "strand", "frame", "infos")
+
+
+# Create a table with just the name of the columns 
+df <- data.frame( "gene_id"= double(), "gene_version" =double(), "transcript_id" = double(), "exon_number" = double(), "gene_name" = double(),"gene_source" = double(), "gene_biotype" = double(), "transcript_name" = double(),  "transcript_source" = double(), "transcript_biotype" = double(),  "exon_id" = double(),stringsAsFactors = FALSE)
+str1 <- str_split_fixed(elegans$infos[1], ";",12)
+str2 <- str_replace(str1[,-1], " ","\\")
+str2
+# Tidy the data 
+for(i in 1:nrow(elegans)){
+  str1 <- str_split_fixed(elegans$infos[i], ";",12)
+  if(str_detect(str1[,1], "gene_id") == TRUE){
+    str_2 <- sub(".*gene_id ","", str1[,1])
+    df[i,1] <- str_2
+  }
+  str2 <- str_replace(str1[,-1], " ","\\")
+  for(j in 1:11){
+   
+    if(str_detect(str2[j], "gene_version") == TRUE){
+      str_2 <- sub(".*gene_version ","", str2[j])
+      df[i,2] <- str_2
+    }
+    else if(str_detect(str2[j], "transcript_id") == TRUE){
+      str_2 <- sub(".*transcript_id ","", str2[j])
+      df[i,3] <- str_2
+    }
+    else if(str_detect(str2[j], "exon_number") == TRUE){
+      str_2 <- sub(".*exon_number ","", str2[j])
+      df[i,4] <- str_2
+    }
+    else if(str_detect(str2[j], "gene_name") == TRUE){
+      str_2 <- sub(".*gene_name ","", str2[j])
+      df[i,5] <- str_2
+    }
+    else if(str_detect(str2[j], "gene_source") == TRUE){
+      str_2 <- sub(".*gene_source ","", str2[j])
+      df[i,6] <- str_2
+    }
+    else if(str_detect(str2[j], "gene_biotype") == TRUE){
+      str_2 <- sub(".*gene_biotype ","", str2[j])
+      df[i,7] <- str_2
+    }
+    else if(str_detect(str2[j], "transcript_name") == TRUE){
+      str_2 <- sub(".*transcript_name ","", str2[j])
+      df[i,8] <- str_2
+    }
+    else if(str_detect(str2[j], "transcript_source") == TRUE){
+      str_2 <- sub(".*transcript_source ","", str2[j])
+      df[i,9] <- str_2
+    }
+    else if(str_detect(str2[j], "transcript_biotype") == TRUE){
+      str_2 <- sub(".*transcript_biotype ","", str2[j])
+      df[i,10] <- str_2
+    }
+    else if(str_detect(str2[j], "exon_id") == TRUE){
+      str_2 <- sub(".*exon_id ","", str2[j])
+      df[i,11] <- str_2
+    }
+  }
+}
+
+
+```
+
+```{r}
+# Other way to do it? 
+
+## Rename columns 
+colnames(elegans)[c(1,3,4,5,6,7,8,9)] <- c("scaffold", "type",  "start", "end", "score", "strand", "frame", "infos")
+
+# Infos to tidy 
+add <- elegans %>% 
+  select(infos) %>% 
+  separate(.,infos, into =  c("gene_id", "gene_version", "transcript_id", "exon_number", "gene_name", "gene_source", "gene_biotype", "transcript_name", "transcript_source", "transcript_biotype", "exon_id", "protein_id"), sep = ";")
+
+#First tidy : only strings corresponding to their columns names 
+new_add_3 <- separate(add, col = "gene_id", into = c("gene_id_marker", "real_gene_id"), sep = "gene_id ")
+new_add_3 <- separate(new_add_3, col = "gene_version", into = c("gene_version_marker", "real_gene_version"), sep = " gene_version ")
+new_add_3 <- separate(new_add_3, col = "transcript_id", into = c("transcript_id_marker", "real_transcript_id"), sep = " transcript_id ")
+new_add_3 <- separate(new_add_3, col = "exon_number", into = c("exon_number_marker", "real_exon_number"), sep = " exon_number ")
+new_add_3 <- separate(new_add_3, col = "gene_name", into = c("gene_name_marker", "real_gene_name"), sep = " gene_name ")
+new_add_3 <- separate(new_add_3, col = "gene_source", into = c("gene_source_marker", "real_gene_source"), sep = " gene_source ")
+new_add_3 <- separate(new_add_3, col = "gene_biotype", into = c("gene_biotype_marker", "real_gene_biotype"), sep = " gene_biotype ")
+new_add_3 <- separate(new_add_3, col = "transcript_name", into = c("transcript_name_marker", "real_transcript_name"), sep = " transcript_name ")
+new_add_3 <- separate(new_add_3, col = "transcript_source", into = c("transcript_source_marker", "real_transcript_source"), sep = " transcript_source ")
+new_add_3 <- separate(new_add_3, col = "transcript_biotype", into = c("transcript_biotype_marker","real_transcript_biotype"), sep = " transcript_biotype ")
+new_add_3 <- separate(new_add_3, col = "exon_id", into = c("exon_id_marker", "real_exon_id"), sep = " exon_id ")
+new_add_3 <- separate(new_add_3, col = "protein_id", into = c("protein_id_marker", "real_protein_id"), sep = " protein_id ")
+
+#Remove the empty columns 
+empty_columns <- colSums(is.na(new_add_3) | new_add_3 == "") == nrow(new_add_3)
+empty_columns
+new_add_3 <- new_add_3[, !empty_columns]
+
+#Remove the space 
+new_add_3 <- separate(new_add_3, col = "transcript_id_marker", into = c("space", "transcript_id_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "exon_number_marker", into = c("space", "exon_number_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "gene_name_marker", into = c("space", "gene_name_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "gene_source_marker", into = c("space", "gene_source_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "gene_biotype_marker", into = c("space", "gene_biotype_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "transcript_name_marker", into = c("space", "transcript_name_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "transcript_source_marker", into = c("space", "transcript_source_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "transcript_biotype_marker", into = c("space", "transcript_biotype_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "exon_id_marker", into = c("space", "exon_id_marker"), sep = "^ ")
+new_add_3 <- separate(new_add_3, col = "protein_id_marker", into = c("space", "protein_id_marker"), sep = "^ ")
+
+#Remove the empty columns 
+empty_columns <- colSums(is.na(new_add_3) | new_add_3 == "") == nrow(new_add_3)
+new_add_3 <- new_add_3[, !empty_columns]
+
+new_add_3 <-  new_add_4
+new_add_4 <-  new_add_3
+
+#Marker 
+m <- c("transcript_id_marker", "exon_number_marker", "gene_name_marker", "gene_source_marker", "gene_biotype_marker", "transcript_name_marker", "transcript_source_marker", "transcript_biotype_marker", "exon_id_marker", "protein_id_marker")
+       
+glimpse(new_add_3)
+
+#Tidy the remaining columns 
+for(i in 1:nrow(new_add_3)){
+  for(j in m){
+    marker <- j
+    str1 <- new_add_3[i,marker]
+    if(is.na(str1)){
+      i <- i
+    }
+    else if(str_detect(str1, "transcript_id")){
+      str_2 <- str_replace( str1,".*transcript_id ","")
+      new_add_3[i,"real_transcript_id"] <- str_2
+    }
+    else if(str_detect(str1, "exon_number")){
+      str_2 <- str_replace( str1,".*exon_number ","")
+      new_add_3[i,"real_exon_number"] <- str_2
+    }
+    else if(str_detect(str1, "gene_name")){
+      str_2 <- str_replace( str1,".*gene_name ","")
+      new_add_3[i,"real_gene_name"] <- str_2
+    }
+    else if(str_detect(str1, "gene_source")){
+      str_2 <- str_replace( str1,".*gene_source ","")
+      new_add_3[i,"real_gene_source"] <- str_2
+    }
+    else if(str_detect(str1, "gene_biotype")){
+      str_2 <- str_replace( str1,".*gene_biotype ","")
+      new_add_3[i,"real_gene_biotype"] <- str_2
+    }
+    else if(str_detect(str1, "transcript_name")){
+      str_2 <- str_replace( str1,".*transcript_name ","")
+      new_add_3[i,"real_transcript_name_marker"] <- str_2
+    }
+    else if(str_detect(str1, "transcript_source")){
+      str_2 <- str_replace( str1,".*transcript_source ","")
+      new_add_3[i,"real_transcript_source"] <- str_2
+    }
+    else if(str_detect(str1, "transcript_biotype")){
+      str_2 <- str_replace( str1,".*transcript_biotype ","")
+      new_add_3[i,"real_transcript_biotype"] <- str_2
+    }
+    else if(str_detect(str1, "exon_id")){
+      str_2 <- str_replace( str1,".*exon_id ","")
+      new_add_3[i,"real_exon_id"] <- str_2
+    }
+    else if(str_detect(str1, "protein_id")){
+      str_2 <- str_replace( str1,".*protein_id ","")
+      new_add_3[i,"real_protein_id"] <- str_2
+    }
+  }
+}
+ 
+
+```
+
+
+```{r}
+str1 <- new_add_3[1,"exon_number_marker"]
+str1 
+
+## Make it generic 
+#IDs
+IDs <- c("gene_version", "transcript_id", "exon_number", "gene_name", "gene_source", "gene_biotype", "transcript_name", "transcript_source", "transcript_biotype", "exon_id")
+
+#Reals
+reals<- c("gene_version_r", "transcript_id_r", "exon_number_r", "gene_name_r", "gene_source_r", "gene_biotype_r", "transcript_name_r", "transcript_source_r", "transcript_biotype_r", "exon_id_r")
+
+#Separator 
+sep <- c(" gene_version ", " transcript_id ", " exon_number ", " gene_name ", " gene_source ", " gene_biotype ", " transcript_name ", " transcript_source ", " transcript_biotype ", " exon_id ")
+
+#Marker 
+m <- c("transcript_id_marker", "exon_number_marker", "gene_name_marker", "gene_source_marker", "gene_biotype_marker", "transcript_name_marker", "transcript_source_marker", "transcript_biotype_marker", "exon_id_marker", "protein_id_marker")
+
+#For 
+new_add <- separate(add, col = "gene_id", into = c("gene_id_marker", "gene_id_r"), sep = "gene_id ")
+for (i in length(IDs)){
+  new_add <- separate(new_add, col = IDs[i], into = c(m[i], reals[i]), sep = sep[i])
+}
+
+c<- select(new_add, contains("marker"))
+
+#Get the markers columns, split in two , take the id and place it in the corresponding columns 
+new_add_3 <- separate(new_add_3, col = m[i], into = c("space", m[i]), sep = "^ ")
+
+
+
+
+for (i in length(m)){
+  new_add_3 <- separate(new_add_3, col = m[i], into = c("space", m[i]), sep = "^ ")
+}
+
+str1 <- as.data.frame(str1)
+
+ str2 <- str_replace(str1[,-1], " ","\\")
+  for(j in 1:11){
+   
+    if(str_detect(str2[j], "gene_version") == TRUE){
+      str_2 <- sub(".*gene_version ","", str2[j])
+      df[i,2] <- str_2
+    }
+
+
+str <- str_replace(new_add_3$transcript_id_marker[3], " ","\\")
+str <- str_split_fixed(str, " ",2)
+str[2]
+```
+
+
+```{r}
+# Infos to tidy 
+add <- elegans %>% select(infos) 
+
+try <- add %>%
+  separate_rows(infos, sep = ";") %>%
+   mutate( "gene_id" = ifelse(grepl("^gene_id", infos), infos, NA),
+           "gene_version" = ifelse(grepl("^ gene_version", infos), infos, NA),
+           "transcript_id" = ifelse(grepl("^ transcript_id", infos), infos, NA),
+           "exon_number" = ifelse(grepl("^ exon_number", infos), infos, NA),
+           "gene_name" = ifelse(grepl("^ gene_name", infos), infos, NA),
+           "gene_source" = ifelse(grepl("^ gene_source",infos), infos, NA),
+           "gene_biotype" = ifelse(grepl("^ gene_biotype", infos), infos, NA),
+           "transcript_name" = ifelse(grepl("^ transcript_name", infos), infos, NA),
+           "transcript_source" = ifelse(grepl("^ transcript_source", infos), infos, NA),
+           "transcript_biotype" = ifelse(grepl("^ transcript_biotype", infos), infos, NA),
+           "exon_id" = ifelse(grepl("^ exon_id", infos), infos, NA),
+           "protein_id" = ifelse(grepl("^ protein_id", infos), infos, NA)) %>% 
+  select(-infos)
+
+try_2 <-  try %>% pivot_longer(1:12,names_to = "infos", values_to = "values") 
+try_3 <- try_2 %>% 
+  pivot_wider(names_from = infos,
+              values_from = values)
+```
+```{r}
+
+## Rename columns 
+colnames(elegans)[c(1,3,4,5,6,7,8,9)] <- c("scaffold", "source", "type",  "start", "end", "score", "strand", "frame", "attribute")
+
+read_gtf <- function(file) {
+  
+  require(tidyverse)
+  cnames <- c("scaffold","source","type","start","end","score","strand","frame","attribute")
+  
+  # read in raw gtf as tsv and remove comment rows
+  messy <- read_tsv(file, col_names = F, comment = "#") %>%
+    `colnames<-`(cnames)
+  
+  # get the unique attribute types
+  # this assumes there are no spaces in the attribute names
+  att_names <- messy %>%
+    select(attribute) %>%
+    apply(., MARGIN = 1, FUN = str_split, pattern = '"; ') %>%
+    unlist() %>% trimws() %>% trimws(whitespace = ";") %>%
+    sub(" .*$", "", .) %>% unique()
+  
+  att_names <- att_names[att_names != ""]
+    
+  # for each attribute type, create column
+  # apply over gtf to fill in rows where attribute type is found
+  for (att in att_names) {
+    
+    colatt <- apply(messy, MARGIN = 1, function(x) {
+
+      var <- str_extract(string = x[9],
+                         pattern = sprintf('";\\s+%1$s[^;]+|^%1$s[^;]+;[^"]+"', att)) %>% 
+        trimws(whitespace = '["; ]+', which = 'left') %>% 
+        str_extract('(?<=")[^"]+(?=")')
+      
+    })
+    
+    messy <- messy %>% add_column("{att}" := colatt)
+    
+  }
+  
+  # remove original attribute column
+  messy %>% select(-c(attribute))
+  
+}
+
+read_gtf("../synteny/caenorhabditis_elegans.PRJNA13758.WBPS16.canonical_geneset.gtf")
+inopinata <- read_gtf("../synteny/caenorhabditis_inopinata.PRJDB5687.WBPS16.canonical_geneset.tgf")
+
+```
+
+
+
+```{r}
+library(rtracklayer)
+
+#Import gtf files 
+elegans <- rtracklayer::import("../synteny/caenorhabditis_elegans.PRJNA13758.WBPS16.canonical_geneset.gtf")
+elegans=as.data.frame(elegans)
+
+#Import paf file
+paf <- read.table("../synteny/evolver_Caenorhabditis.paf", sep = "\t")
+```
+
+```{r}
+#Changes PAF colnames to match gggenomes requirements 
+colnames(paf) <- c("seq_id", "length1", "start", "end", "strand", "seq_id2", "lenght2", "start2", "end2", "nmatch", "alen", "mapq", "other")
+
+#Changes gtf files colname to match gggenomes requirements
+colnames(elegans)[1] <- "scaff"
+elegans$seq_id = paste("elegans", elegans$scaff ,sep = "_")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

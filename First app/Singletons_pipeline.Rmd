@@ -1,0 +1,329 @@
+---
+title: "Singletons_pipeline"
+author: "Lilly"
+date: "2023-03-06"
+output: html_document
+---
+
+```{r}
+library(rtracklayer)
+library(tidyverse)
+library(gggenomes)
+```
+
+## Prepare the data 
+
+```{r}
+## Load files (3 types)
+
+#Load tyded gtf (csv)
+bovis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/bovis.csv")
+becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/becei.csv")
+panamensis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/panamensis.csv")
+inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/inopinata.csv")
+elegans <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/elegans.csv")
+tropicalis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tropicalis.csv")
+remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/remanei.csv")
+latens <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/latens.csv")
+tribulationis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tribulationis.csv")
+briggsae <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/briggsae.csv")
+nigoni <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/nigoni.csv")
+
+#Load tyded psl files (csv)
+psl_becei_bovis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/becei_bovis.csv")
+psl_bovis_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/bovis_becei.csv")
+psl_panamensis_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/panamensis_becei.csv")
+psl_becei_panamensis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/becei_panamensis.csv")
+psl_panamensis_inopinata <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/panamensis_inopinata.csv")
+psl_inopinata_panamensis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/inopinata_panamensis.csv")
+psl_inopinata_elegans <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/inopinata_elegans.csv")
+psl_elegans_inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/elegans_inopinata.csv")
+psl_tropicalis_elegans <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tropicalis_elegans.csv")
+psl_elegans_tropicalis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/elegans_tropicalis.csv")
+psl_tropicalis_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tropicalis_remanei.csv")
+psl_remanei_tropicalis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/remanei_tropicalis.csv")
+psl_latens_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/latens_remanei.csv")
+psl_remanei_latens <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/remanei_latens.csv")
+psl_latens_tribulationis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/latens_tribulationis.csv")
+psl_tribulationis_latens <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tribulationis_latens.psl")
+psl_briggsae_tribulationis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/briggsae_tribulationis.csv")
+psl_tribulationis_briggsae <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tribulationis_briggsae.csv")
+psl_nigoni_briggsae <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/nigoni_briggsae.csv")
+psl_briggsae_nigoni <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/briggsae_nigoni.csv")
+
+#Load csv files of pairwise alignment with C.elegans 
+genes_bovis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_bovis.csv")
+genes_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_becei.csv")
+genes_panamensis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_panamensis.csv")
+genes_inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_inopinata.csv")
+genes_elegans <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_elegans.csv")
+genes_tropicalis  <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_tropicalis.csv")
+genes_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_remanei.csv")
+genes_latens <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_latens.csv")
+genes_tribulationis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_tribulationis.csv")
+genes_briggsae <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_briggsae.csv")
+genes_nigoni <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/genes_nigoni.csv")
+
+
+#Load psl pairwise alignment
+psl_bovis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_bovis.csv")
+psl_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_becei.csv")
+psl_panamensis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_panamensis.csv")
+psl_inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_inopinata.csv")
+psl_tropicalis  <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_tropicalis.csv")
+psl_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_remanei.csv")
+psl_latens <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_latens.csv")
+psl_tribulationis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_tribulationis.csv")
+psl_briggsae <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_briggsae.csv")
+psl_nigoni <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/psl_nigoni.csv")
+```
+### Prepare data before the pipeline 
+
+```{r}
+## Clean it 
+genes_becei <- genes_becei  %>% select(-X)
+genes_bovis <- genes_bovis  %>% select(-X)
+genes_panamensis <- genes_panamensis  %>% select(-X)
+genes_inopinata <- genes_inopinata  %>% select(-X)
+genes_elegans <- genes_elegans  %>% select(-X)
+genes_tropicalis <- genes_tropicalis  %>% select(-X)
+genes_remanei <- genes_remanei  %>% select(-X)
+genes_latens <- genes_latens %>% select(-X)
+genes_tribulationis <- genes_tribulationis  %>% select(-X)
+genes_briggsae <- genes_briggsae  %>% select(-X)
+genes_nigoni <- genes_nigoni  %>% select(-X)
+
+psl_becei_bovis <- psl_becei_bovis  %>% select(-X)
+psl_bovis_becei <- psl_bovis_becei  %>% select(-X)
+psl_panamensis_becei <- psl_panamensis_becei  %>% select(-X)
+psl_becei_panamensis <- psl_becei_panamensis  %>% select(-X)
+psl_panamensis_inopinata <- psl_panamensis_inopinata  %>% select(-X)
+psl_inopinata_panamensis <- psl_inopinata_panamensis  %>% select(-X)
+psl_inopinata_elegans <- psl_inopinata_elegans  %>% select(-X)
+psl_elegans_inopinata <- psl_elegans_inopinata  %>% select(-X)
+psl_tropicalis_elegans <- psl_tropicalis_elegans  %>% select(-X)
+psl_elegans_tropicalis <- psl_elegans_tropicalis  %>% select(-X)
+psl_tropicalis_remanei <- psl_tropicalis_remanei  %>% select(-X)
+psl_remanei_tropicalis <- psl_remanei_tropicalis  %>% select(-X)
+psl_latens_remanei <- psl_latens_remanei  %>% select(-X)
+psl_remanei_latens <- psl_remanei_latens  %>% select(-X)
+psl_latens_tribulationis <- psl_latens_tribulationis  %>% select(-X)
+psl_tribulationis_latens <- psl_tribulationis_latens  %>% select(-X)
+psl_briggsae_tribulationis <- psl_briggsae_tribulationis  %>% select(-X)
+psl_tribulationis_briggsae <-psl_tribulationis_briggsae  %>% select(-X)
+psl_nigoni_briggsae <-psl_nigoni_briggsae  %>% select(-X)
+psl_briggsae_nigoni <-psl_briggsae_nigoni  %>% select(-X)
+
+
+psl_becei <- psl_becei  %>% select(-X)
+psl_bovis <- psl_bovis  %>% select(-X)
+psl_panamensis <- psl_panamensis  %>% select(-X)
+psl_inopinata <- psl_inopinata  %>% select(-X)
+psl_tropicalis <- psl_tropicalis  %>% select(-X)
+psl_remanei <- psl_remanei  %>% select(-X)
+psl_latens <- psl_latens %>% select(-X)
+psl_tribulationis <- psl_tribulationis  %>% select(-X)
+psl_briggsae <- psl_briggsae  %>% select(-X)
+psl_nigoni <- psl_nigoni  %>% select(-X)
+```
+
+```{r}
+## GTF genes files filter by type transcript 
+filter_bovis <- bovis %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_becei <- becei %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_panamensis <- panamensis %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_inopinata <- inopinata %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_elegans <- elegans %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_tropicalis <- tropicalis %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_remanei <- remanei %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_latens <- latens %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_tribulationis <- tribulationis %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_briggsae <- briggsae %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+filter_nigoni <- nigoni %>%  group_by(scaff) %>% filter(type == "transcript") %>% select(-X) %>% rename(length = "width")
+```
+
+```{r}
+#Singletons
+duplicate_singletons <- read.table("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/Others/Duplicate_gene_in_C.elegans_genome.txt")
+colnames(duplicate_singletons) <- c("gene_id", "Orthogroup", "dN/dS(w)", "Branch")
+duplicate_singletons <- duplicate_singletons[-1,]
+
+#For the test 1 : singletons 
+singletons <- duplicate_singletons %>% filter(Branch == "Singletons") %>% select(-c("dN/dS(w)", "Branch"))
+
+#Merge singletons with C.elegans (inner_join)
+singletons_elegans <- merge(elegans, singletons, by = "gene_id")
+singletons_elegans <- singletons_elegans %>% select(-c(X,Orthogroup.y)) %>% rename(Orthogroup = "Orthogroup.x")
+```
+
+```{r}
+## Merge elegans singletons with aligned coordinates of other species 
+
+#Bovis
+singletons_elegans_genes_bovis <- merge(genes_bovis, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_bovis <- singletons_elegans_genes_bovis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Becei
+singletons_elegans_genes_becei <- merge(genes_becei, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_becei <-  singletons_elegans_genes_becei %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Panamensis
+singletons_elegans_genes_panamensis <- merge(genes_panamensis, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_panamensis <-  singletons_elegans_genes_panamensis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Inopinata
+singletons_elegans_genes_inopinata <- merge(genes_inopinata, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_inopinata <-  singletons_elegans_genes_inopinata %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Tropicalis
+singletons_elegans_genes_tropicalis <- merge(genes_tropicalis, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_tropicalis <-  singletons_elegans_genes_tropicalis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Remanei
+singletons_elegans_genes_remanei <- merge(genes_remanei, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_remanei <-  singletons_elegans_genes_remanei %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Latens
+singletons_elegans_genes_latens <- merge(genes_latens, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_latens <-  singletons_elegans_genes_latens %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Tribulationis
+singletons_elegans_genes_tribulationis <- merge(genes_tribulationis, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_tribulationis <-  singletons_elegans_genes_tribulationis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Briggsae
+singletons_elegans_genes_briggsae <- merge(genes_briggsae, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_briggsae <-  singletons_elegans_genes_briggsae %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+
+#Nigoni
+singletons_elegans_genes_nigoni <- merge(genes_nigoni, singletons_elegans, by = "transcript_id")
+singletons_elegans_genes_nigoni <-  singletons_elegans_genes_nigoni %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, Orthogroup)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+```
+
+```{r}
+## Merge the resulting files with the pre-filtered transcripts gtf files 
+final_genes_bovis <- merge(filter_bovis, singletons_elegans_genes_bovis, by = c("start", "end"))
+final_genes_becei <- merge(filter_becei, singletons_elegans_genes_becei, by = c("start", "end"))
+final_genes_panamensis <- merge(filter_panamensis, singletons_elegans_genes_panamensis, by = c("start", "end"))
+final_genes_inopinata <- merge(filter_inopinata, singletons_elegans_genes_inopinata, by = c("start", "end"))
+final_genes_elegans <- merge(filter_elegans, singletons_elegans, by = c("start", "end"))
+final_genes_tropicalis <- merge(filter_tropicalis, singletons_elegans_genes_tropicalis, by = c("start", "end"))
+final_genes_remanei <- merge(filter_remanei, singletons_elegans_genes_remanei, by = c("start", "end"))
+final_genes_latens <- merge(filter_latens, singletons_elegans_genes_latens, by = c("start", "end"))
+final_genes_tribulationis <- merge(filter_tribulationis, singletons_elegans_genes_tribulationis, by = c("start", "end"))
+final_genes_briggsae <- merge(filter_briggsae, singletons_elegans_genes_briggsae, by = c("start", "end"))
+final_genes_nigoni <- merge(filter_nigoni, singletons_elegans_genes_nigoni, by = c("start", "end"))
+
+#Get the final genes file to put in gggenomes (genes/feats args)
+genes <- rbind(final_genes_bovis,final_genes_becei,final_genes_panamensis,final_genes_inopinata,final_genes_tropicalis, final_genes_remanei,final_genes_latens,final_genes_tribulationis,final_genes_briggsae,final_genes_nigoni)
+
+#Make it beautiful 
+genes <- genes %>%  rename(seq_id ="seq_id.x", scaff = "scaff.x", length = "length.x", strand = "strand.x", transcript_id = "transcript_id.x", gene_id = "gene_id.y", gene_id_species = "gene_id.x") %>% select(-c("transcript_id.y","seq_id.y", "length.y", "strand.y", "type.y", "type.x", "scaff.y"))
+
+#Change elegans
+final_genes_elegans <- final_genes_elegans %>% rename(seq_id ="seq_id.x", scaff = "scaff.x", strand = "strand.x", transcript_id = "transcript_id.x", gene_id = "gene_id.y", Orthogroup = "Orthogroup.x", gene_id_species = "gene_id.x") %>% select(-c("transcript_id.y","seq_id.y", "strand.y", "type.y","width", "scaff.y", "Orthogroup.y", "type.x"))
+
+#Join elegans to the data
+genes <- rbind(genes, final_genes_elegans) %>%  distinct()
+```
+
+```{r}
+#Get the transcript coordinates with min start and max end (we are building something that doesn't exist in the real life (macro synteny level))
+
+#First version with summarise (remove the other informations)
+min_max_genes <- genes %>% group_by(seq_id) %>% summarise(start = min(start), end = max(end)) %>% distinct()
+min_max_genes <- merge(min_max_genes, genes, by = c("start", "end"), all.x = TRUE)
+
+#Second version with mutate and ungroup (keep all the other columns (infos will be redundant in the new created columns))
+min_max_genes <- genes %>% group_by(seq_id) %>% mutate(start_min = min(start), end_max = max(end)) %>% ungroup() %>% distinct()
+```
+
+```{r}
+## Links
+#Data frame with all the links following the tree 
+links_df_1 <- rbind(psl_becei_bovis, psl_panamensis_becei, psl_inopinata_panamensis,psl_elegans_inopinata,psl_tropicalis_elegans,psl_remanei_tropicalis,psl_latens_remanei, psl_tribulationis_latens, psl_briggsae_tribulationis, psl_nigoni_briggsae, psl_bovis_becei, psl_becei_panamensis, psl_panamensis_inopinata, psl_inopinata_elegans, psl_elegans_tropicalis, psl_tropicalis_remanei, psl_remanei_latens, psl_latens_tribulationis, psl_tribulationis_briggsae, psl_briggsae_nigoni)
+
+#Data frames of pairwise alignment with C.elegans 
+links_df_2 <- rbind(psl_becei, psl_bovis, psl_tropicalis, psl_tribulationis, psl_panamensis, psl_remanei, psl_inopinata, psl_latens, psl_briggsae, psl_nigoni)
+
+#Data frames following the descending order of the tree 
+links_df_3 <- rbind(psl_becei_bovis, psl_panamensis_becei, psl_inopinata_panamensis,psl_elegans_inopinata,psl_tropicalis_elegans,psl_remanei_tropicalis,psl_latens_remanei, psl_tribulationis_latens, psl_briggsae_tribulationis, psl_nigoni_briggsae)
+
+#Data frames following the increasing order of the tree 
+links_df_4 <- rbind(psl_bovis_becei, psl_becei_panamensis, psl_panamensis_inopinata, psl_inopinata_elegans, psl_elegans_tropicalis, psl_tropicalis_remanei, psl_remanei_latens, psl_latens_tribulationis, psl_tribulationis_briggsae, psl_briggsae_nigoni)
+```
+
+```{r}
+# Save data 
+write.csv(genes, "../R_files/CSV/singletons_genes.csv")
+write.csv(min_max_genes, "../R_files/CSV/singletons_min_max_genes.csv")
+write.csv(links_df_1, "../R_files/CSV/links_df_1.csv")
+write.csv(links_df_2, "../R_files/CSV/links_df_2.csv")
+write.csv(links_df_3, "../R_files/CSV/links_df_3.csv")
+write.csv(links_df_4, "../R_files/CSV/links_df_4.csv")
+```
+
+-----------------------------------------------------------------PIPELINE--------------------------------------------------------------
+
+### Pipeline with the singletons
+
+```{r}
+## Macro-synteny : MAIN
+singletons_genes <- read.csv("../R_files/CSV/singletons_genes.csv")
+min_max_genes <- read.csv("../R_files/CSV/singletons_min_max_genes.csv")
+links_df_1 <- read.csv("../R_files/CSV/links_df_1.csv")
+links_df_2 <- read.csv("../R_files/CSV/links_df_2.csv")
+links_df_3 <- read.csv("../R_files/CSV/links_df_3.csv")
+links_df_4 <- read.csv("../R_files/CSV/links_df_4.csv")
+```
+
+```{r}
+## User selection gene_id (examples)
+sub_genes <- user_singletons(100, 10000)
+geom_1 <- user_singletons(list_genes = c("WBGene00010237"))
+geom_1
+```
+
+```{r}
+## User selection gene_id (examples)
+
+#Genes
+sub_genes <- subset_by_length(genes, 100, 10000)
+sub_genes <- select_by_genes(genes, c( "WBGene00010237"))#2
+sub_genes <- select_by_genes(genes, c( "WBGene00007513"))#2
+sub_genes <- select_by_genes(genes, c( "WBGene00009585"))#2
+sub_genes <- select_by_genes(genes, c( "WBGene00009385"))#5
+sub_genes <- select_by_genes(genes, c( "WBGene00001479"))#3
+sub_genes <- select_by_genes(genes, c( "WBGene00015293"))#11
+sub_genes <- select_by_genes(genes, c( "WBGene00000711"))#8 
+sub_genes <- select_by_genes(genes, c( "WBGene00000122"))#3
+sub_genes <- select_by_genes(genes, c( "WBGene00022861"))#11
+
+
+sub_genes <- genes %>% group_by(seq_id) %>% filter(!duplicated(gene_id))
+
+
+#min_max_genes
+sub_genes <- subset_by_length(min_max_genes, 0, 50000)
+sub_genes <- select_by_genes(min_max_genes, c( "WBGene00000711"))
+sub_genes <- select_by_genes(min_max_genes, c( "WBGene00015293"))
+sub_genes <- min_max_genes %>% group_by(seq_id) %>% filter(!duplicated(gene_id))
+
+#Links
+sub_links <- filter(bound_links_1, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+```
+
+```{r}
+## Gggenomes
+
+#Plot 1 
+geom_1 <- gggenomes(genes = sub_genes, links = sub_links) +
+  geom_gene(aes(fill=Orthogroup))+
+  geom_seq()+
+  geom_bin_label() +
+  geom_link() +
+  geom_seq_label()
+geom_1
+
+```

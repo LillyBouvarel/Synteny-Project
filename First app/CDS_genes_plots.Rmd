@@ -1,0 +1,475 @@
+---
+title: "Functions sheet"
+author: "Lilly"
+date: "2023-02-02"
+output: html_document
+---
+## This sheet is to learn gggenomes 
+#List of different way to plot an alignment in gggenomes from easy to complex 
+#I chose to deal with two seqs : c.elegan and 
+
+```{r, echo = FALSE}
+library(gggenomes)
+```
+
+```{r}
+## Read files 
+
+#read python script prepared data
+ava = read.table(file = "ele_X_1050000_1150000.nogap.ava")
+seq = read.table(file = "ele_X_1050000_1150000.seq", header = T)
+gene = read.table(file = "ele_X_1050000_1150000.nogap.ana")
+```
+
+```{r}
+## Data frames manipulation (base to work with)
+
+#For the seq : creating Seq length and seq_ID (length, seq_ID)
+colnames(seq) = c("species", "scaff", "start", "end")
+seq$length = as.numeric(seq$end) - as.numeric(seq$start) 
+seq$seq_id = paste(seq$species, seq$scaff ,sep = "_")
+
+#For the gene : creating seq_id, and rename the columns (seq_ID, start, end)
+colnames(gene) = c("species", "scaff", "type", "start", "end", "strand","name")
+gene$seq_id = paste(gene$species, gene$scaff ,sep = "_")
+#gene$type[which(gene$type %in% "gene")] =  rep("CDS", 9) 
+## if we want plot gene, only CDS region has color block
+
+#For the links : we need seq_id, start, end and seq_id2, start2, end2 to link to sequences with each other
+colnames(ava) = c("species1", "scaffold1", "start", "end", "strand", 
+                  "species2", "scaffold2", "start2", "end2","strand2")
+ava$seq_id = paste(ava$species1, ava$scaffold1, sep = "_")
+ava$seq_id2 = paste(ava$species2, ava$scaffold2, sep = "_")
+
+#To keep only the seq length that have the same seq_id that the sequences in the seq file 
+ava$length = seq$length[match(ava$seq_id, seq$seq_id)]
+ava$length2 = seq$length[match(ava$seq_id2, seq$seq_id)]
+
+#Keep the useful columns (seq_id, length, start, end, strand, seq_id2, length2, start2, end2)
+ava_sub = ava[ ,colnames(emale_ava)[2:10]] 
+```
+
+```{r}
+## Subsetting : Longest sequence per species 
+#subset data track (seq data) : get the longest sequence per species 
+by_species_single_seq <- seq %>% group_by(species) %>% 
+  arrange(species, desc(length)) %>% 
+  filter(row_number()==1)
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% by_species_single_seq$seq_id & seq_id2 %in% by_species_single_seq$seq_id)
+sub_gene = filter(gene, seq_id %in% by_species_single_seq$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+###gene dataset test
+test_gene = sub_gene %>% group_by(species) %>% arrange(species, scaff, start) %>% filter(between(row_number(), 1,10))
+
+#Divide gene and cds 
+#Filter genes 
+manipu_gene = test_gene %>% filter(type == "gene")
+manipu_cds = test_gene %>% filter(type == "CDS")
+```
+
+
+```{r}
+# Only CDS are display -> do not recognize "gene" type 
+geom_gene <- gggenomes(genes = test_gene, links = sub_ava_no_dup) +
+  geom_gene() + 
+  geom_seq()+
+  geom_bin_label()+
+  geom_link()
+
+# Only features in the "genes" of geneish type (implicit `data=genes()`)
+geom_gene_tag <- gggenomes(genes=test_gene, links = sub_ava_no_dup) +
+  geom_gene() +
+  geom_gene_tag(aes(label=ifelse(is.na(type), "<NA>", type)), data=genes(.gene_types = NULL)) +
+  geom_seq()+
+  geom_bin_label()+
+  geom_link()
+
+# all features in the "genes" regardless of type
+geom_feat <- gggenomes(genes=test_gene, links = sub_ava_no_dup) +
+  geom_feat(data=feats(genes)) +
+  geom_seq()+
+  geom_bin_label()+
+  geom_link()
+
+# control which types are returned from the track
+geom_gene_types <- gggenomes(genes=test_gene, links = sub_ava_no_dup) +
+  geom_gene( data=genes(.gene_types = c("CDS", "gene"))) +
+  geom_seq()+
+  geom_bin_label()+
+  geom_link()
+
+# control which types can have introns
+geom_gene_intron_types <- gggenomes(genes=test_gene, links = sub_ava_no_dup) +
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene_tag(aes(label=ifelse(is.na(type), "<NA>", type)), data=genes(.gene_types = NULL)) +
+  geom_bin_label()+
+  geom_link() 
+
+#Geom_gene with gene_types == c(CDS,gene) and intron_types == gene
+geom_color_cds <- gggenomes(genes = test_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() +
+  geom_gene(aes(fill=name), shape = 0)
+
+
+
+geom_gene
+geom_gene_tag
+geom_feat
+geom_gene_types
+geom_gene_intron_types
+geom_color_cds
+```
+
+
+
+```{r}
+## subsetting : take only the species that contain one sequence
+
+#subset data track (seq data)
+species_1 <- seq %>% group_by(species) %>% filter(length(species) == 1)
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% species_1$seq_id & seq_id2 %in%  species_1$seq_id)
+sub_gene <- filter(gene, seq_id %in% species_1$seq_id)
+sub_ava_dup <- sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup <- sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Plot 
+p1 <- gggenomes(genes = sub_gene, links = sub_ava_no_dup) +
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link()
+p1
+```
+
+```{r}
+## Plot all the nodes one by one
+
+## Subsetting : N4 alignment (C.elegans and C.inopinata)
+
+#subset data track (seq data) : get only C.elegans and C.inopinata 
+elegans_inopinata <- seq %>% group_by(species) %>% filter(species %in% c("elegans","inopinata"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% elegans_inopinata$seq_id & seq_id2 %in% elegans_inopinata$seq_id)
+sub_gene = filter(gene, seq_id %in% elegans_inopinata$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Geom_gene with gene_types == c(CDS,gene) and intron_types == gene
+N4 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_seq_label() +
+  geom_link() 
+N4
+```
+
+
+```{r}
+## Subsetting : N2 alignment (c.becei and c.panamensis)
+becei_panamensis <- seq %>% group_by(species) %>% filter(species %in% c("becei","panamensis"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% becei_panamensis$seq_id & seq_id2 %in% becei_panamensis$seq_id)
+sub_gene = filter(gene, seq_id %in% becei_panamensis$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#geom_gene
+N2_0<- gggenomes(genes = sub_gene)
+ N2_0 + geom_gene(position = "pile")
+
+N2_1 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene", intron_shape = 0) +
+  geom_gene(aes(fill=name), shape = 0, intron_shape = 0, color="black") +
+  geom_seq() +
+  geom_seq_label() +
+  geom_link()
+N2_1
+
+N2_3 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")), intron_shape = 0) +
+  geom_gene(aes(fill=name), shape = 0, intron_shape = 0, color="black") +
+  geom_seq() +
+  geom_seq_label() +
+  geom_link()
+N2_3
+
+N2_2 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+ # geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_seq_label() +
+  geom_link() 
+N2_2
+```
+
+
+```{r}
+## Subsetting : N7 alignment (c.remanei and c.latens)
+seq_1 <- seq %>% group_by(species) %>% arrange(species, desc(length)) %>% filter(row_number()==1)
+remanei_latens <- seq_1 %>% group_by(species) %>% filter(species %in% c("remanei","latens"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% remanei_latens$seq_id & seq_id2 %in% remanei_latens$seq_id)
+sub_gene = filter(gene, seq_id %in% remanei_latens$seq_id)
+sub_gene_1 = filter(gene, seq_id %in% remanei_latens$seq_id & start <500000)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N7 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  #geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N7
+```
+
+
+```{r}
+## Subsetting : N9 alignment (c.briggsae and c.nigoni)
+briggsae_nigoni_1 <- seq %>% group_by(species) %>% arrange(species, desc(length)) %>% filter(row_number()==1)
+briggsae_nigoni <- briggsae_nigoni_1 %>% group_by(species) %>% filter(species %in% c("briggsae","nigoni"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% briggsae_nigoni$seq_id & seq_id2 %in% briggsae_nigoni$seq_id)
+sub_gene = filter(gene, seq_id %in% briggsae_nigoni$seq_id)
+sub_gene_1 = filter(gene, seq_id %in% briggsae_nigoni$seq_id & start < 50000)
+sub_gene_2 = filter(gene, seq_id %in% briggsae_nigoni$seq_id & start <100000 & end > 50000)
+sub_gene_3 = filter(gene, seq_id %in% briggsae_nigoni$seq_id & start <150000 & end > 100000)
+
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N9_1 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=type), shape = 0, color = "grey") +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N9_1
+
+N9_2 <- gggenomes(genes = sub_gene_1,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=type), shape = 0, color = "grey") +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N9_2
+
+N9_3 <- gggenomes(genes = sub_gene_2,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=type), shape = 0, color = "grey") +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N9_3
+
+N9_4 <- gggenomes(genes = sub_gene_3,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=type), shape = 0, color = "grey") +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N9_4
+
+N9_4 <- gggenomes(genes = sub_gene_3,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=type), shape = 0, color = "grey") +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() +
+  geom_gene_tag(aes(label=ifelse(is.na(name), "<NA>", name)), data=genes(.gene_types = NULL)) 
+
+N9_4
+
+```
+
+
+```{r}
+## Subsetting : N8 alignment (c.briggsae and c.nigoni and c.tribulationis)
+seq_1 <- seq %>% group_by(species) %>% arrange(species, desc(length)) %>% filter(row_number()==1)
+briggsae_nigoni_tribulationis <- seq_1 %>% group_by(species) %>% filter(species %in% c("briggsae","nigoni", "tribulationis"))
+
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% briggsae_nigoni_tribulationis$seq_id & seq_id2 %in% briggsae_nigoni_tribulationis$seq_id)
+sub_gene = filter(gene, seq_id %in% briggsae_nigoni_tribulationis$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N8 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N8
+```
+
+
+```{r}
+## Subsetting : N6 alignment (c.briggsae and c.nigoni and c.tribulationis / remanei and latens)
+briggsae_nigoni_tribulationis_remanei_latens <- seq %>% group_by(species) %>% filter(species %in% c("briggsae","nigoni", "tribulationis", "remanei", "latens"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens$seq_id & seq_id2 %in% briggsae_nigoni_tribulationis_remanei_latens$seq_id)
+sub_gene = filter(gene, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N6 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N6
+```
+
+
+```{r}
+## Subsetting : N5 alignment (c.briggsae and c.nigoni and c.tribulationis / remanei and latens / tropicalis)
+briggsae_nigoni_tribulationis_remanei_latens_tropicalis <- seq %>% group_by(species) %>% filter(species %in% c("briggsae","nigoni", "tribulationis", "remanei", "latens", "tropicalis"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis$seq_id & seq_id2 %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis$seq_id)
+sub_gene = filter(gene, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N5 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N5
+```
+
+
+```{r}
+## Subsetting : N3 alignment (c.briggsae and c.nigoni and c.tribulationis / remanei and latens / tropicalis / inopinata and elegans)
+briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans <- seq %>% group_by(species) %>% filter(species %in% c("briggsae","nigoni", "tribulationis", "remanei", "latens", "tropicalis", "inopinata", "elegans"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans$seq_id & seq_id2 %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans$seq_id)
+sub_gene = filter(gene, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N3 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N3
+```
+
+
+```{r}
+## Subsetting : N1 alignment (c.briggsae and c.nigoni and c.tribulationis / remanei and latens / tropicalis / inopinata and elegans / becei and panamensis)
+briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis <- seq %>% group_by(species) %>% filter(species %in% c("briggsae","nigoni", "tribulationis", "remanei", "latens", "tropicalis", "inopinata", "elegans", "becei", "panamensis"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis$seq_id & seq_id2 %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis$seq_id)
+sub_gene = filter(gene, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N1 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N1
+```
+
+
+```{r}
+## Subsetting : N0 alignment (briggsae and nigoni / tribulationis / remanei and latens / tropicalis / inopinata and elegans / becei and panamensis / bovis)
+briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis_bovis <- seq %>% group_by(species) %>% filter(species %in% c("briggsae","nigoni", "tribulationis", "remanei", "latens", "tropicalis", "inopinata", "elegans", "becei", "panamensis", "bovis")) #useless but still it's useful to remind what's inside seq file
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis_bovis$seq_id & seq_id2 %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis_bovis$seq_id)
+sub_gene = filter(gene, seq_id %in% briggsae_nigoni_tribulationis_remanei_latens_tropicalis_inopinata_elegans_becei_panamensis_bovis$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+N0 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_bin_label() +
+  geom_link() 
+N0
+```
+
+
+```{r}
+N4
+N2
+N7
+N9
+N8
+N6
+N5
+N3
+#N1
+#N0
+```
+
+```{r}
+## Plot all the nodes one by one
+
+## Subsetting : N4 alignment (C.elegans and C.inopinata)
+
+#subset data track (seq data) : get only C.elegans and C.inopinata 
+elegans_inopinata <- seq %>% group_by(species) %>% filter(species %in% c("elegans","inopinata"))
+
+#Recreating the other dataframe (gene and links)
+sub_ava <- filter(ava, seq_id %in% elegans_inopinata$seq_id & seq_id2 %in% elegans_inopinata$seq_id)
+sub_gene = filter(gene, seq_id %in% elegans_inopinata$seq_id)
+sub_ava_dup = sub_ava %>% filter(seq_id2 == seq_id)
+sub_ava_no_dup = sub_ava %>% filter(seq_id2 != seq_id)
+#unique(sub_gene$type)
+
+#Geom_gene with gene_types == c(CDS,gene) and intron_types == gene
+N4 <- gggenomes(genes = sub_gene,links = sub_ava_no_dup) + 
+  geom_gene(data=genes(.gene_types = c("CDS", "gene")),intron_types = "gene") +
+  geom_gene(aes(fill=name), shape = 0) +
+  geom_seq() +
+  geom_seq_label()
+  
+```
+
+
+
+
+

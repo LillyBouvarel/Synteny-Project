@@ -1,0 +1,35 @@
+---
+title: "gggenomes"
+author: "Lilly"
+date: "2023-01-12"
+output: html_document
+---
+```{r}
+#Example from github 
+library(tidyverse)
+library(gggenomes)
+
+
+# with some more information
+gggenomes(emale_genes, emale_seqs, emale_tirs, emale_ava) %>%
+  add_feats(emale_ngaros, emale_gc) %>%
+  add_clusters(emale_cogs) %>%
+  flip_by_links() +
+  geom_link(offset = 0.15, color="white") +                        # synteny-blocks
+  geom_seq() + geom_bin_label() +                                  # chromosomes and labels
+  # thistle4, salmon4, burlywood4
+  geom_feat(size=6, position="identity") +                         # terminal inverted repeats
+  geom_feat(data=feats(emale_ngaros), color="turquoise4", alpha=.3,
+            position="strand", size=16) +
+  geom_feat_note(aes(label=type), data=feats(emale_ngaros),
+                 position="strand", nudge_y = .3) +
+  geom_gene(aes(fill=cluster_id), position="strand") + # genes
+  scale_fill_brewer("Conserved genes", palette="Dark2", na.value = "cornsilk3") +
+  #scale_fill_viridis_b() +
+  geom_ribbon(aes(x=(x+xend)/2, ymax=y+.24, ymin=y+.38-(.4*score),
+                  group=seq_id, linetype="GC-content"), feats(emale_gc),
+              fill="lavenderblush4", position=position_nudge(y=-.1))
+
+
+```
+

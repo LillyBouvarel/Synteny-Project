@@ -1,0 +1,102 @@
+---
+title: "Add_orthologs2"
+author: "Lilly"
+date: "2023-02-24"
+output: html_document
+---
+
+
+```{r}
+library(rtracklayer)
+library(tidyverse)
+library(gggenomes)
+```
+
+```{r}
+
+## PLS files following the association of the tree
+psl_bovis_becei <- read.table(file = "../synteny/bovis_becei.psl", sep= "\t")
+colnames(psl_bovis_becei) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","width","start","end","seq_id2","width2","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_bovis_becei$seq_id <- paste("bovis",psl_bovis_becei$scaff, sep = "_")
+psl_bovis_becei$seq_id2 <- paste("becei",psl_bovis_becei$seq_id2, sep = "_")
+psl_bovis_becei <- psl_bovis_becei %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_bovis_becei$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+psl_becei_bovis <- read.table(file = "../synteny/psl_liftover/psl_becei_bovis.psl", sep= "\t")
+colnames(psl_becei_bovis) <- c("matches", "misMatches" ,"repMatches","nCount","qNumInsert","qBaseInsert","tNumInsert","tBaseInsert" ,"strand","scaff","width","start","end","seq_id2","width2","start2","end2","blockCount","blockSizes","qStarts","tStarts")
+psl_becei_bovis$seq_id <- paste("becei",psl_becei_bovis$scaff, sep = "_")
+psl_becei_bovis$seq_id2 <- paste("bovis",psl_becei_bovis$seq_id2, sep = "_")
+psl_becei_bovis <- psl_becei_bovis %>%
+  mutate(new_strand = gsub("([[:punct:]])([[:punct:]])", "\\1 \\2", psl_becei_bovis$strand)) %>% 
+  select(-strand) %>% 
+  separate(new_strand, into = c("strand", "strand2"), sep = " ")
+
+```
+```{r}
+## Take the coordinates of each 10 species based on the pairwise alignment with c.elegans
+ids <- elegans[, c("gene_id", "transcript_id")] %>%  as.data.frame()
+ids_ortho <- merge(ids, ortho_elegans, by = "gene_id", all.x = TRUE)
+ids_ortho <- ids_ortho[, -1]
+colnames(ids_ortho)[1] <- "gene_id"
+
+genes_bovis <- psl_bovis[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_bovis <- merge(genes_bovis,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_bovis <-  genes_bovis %>% distinct() %>% mutate(bin_id = "bovis")
+colnames(genes_bovis) <- c("gene_id1", "seq_id", "start", "end", "width", "strand", "Orthogroup", "bin_id")
+
+genes_becei <- psl_becei[, c("gene_id", "seq_id2", "start2", "end2", "tSize", "strand2")]
+genes_becei <- merge(genes_becei,ids_ortho, by = "gene_id", all.x = TRUE)
+genes_becei <- genes_becei %>%  distinct() %>% mutate(bin_id = "becei")
+colnames(genes_becei) <- c("gene_id1", "seq_id", "start", "end", "width", "strand", "Orthogroup", "bin_id")
+genes_becei <- genes_becei %>%  mutate(width = end-start)
+
+test <- psl_becei_bovis[, c("scaff", "width", "start", "end")]
+columns <- becei[, c("scaff", "start","end" , "width", "gene_id", "transcript_id")]
+new_genes_becei <- merge(test, columns, by = c("scaff", "width", "start", "end"), all.x=TRUE)
+new_genes_becei <- new_genes_becei %>% distinct()
+
+#Try 
+columns <- becei[, c("seq_id", "scaff", "start","end" , "width", "gene_id", "transcript_id")]
+new_genes_becei <- merge(genes_becei, columns, by = c("seq_id", "width"), all.x=TRUE)
+new_genes_becei <- new_genes_becei %>% distinct()
+```
+```{r}
+#genes
+genes <- rbind(genes_bovis, genes_becei)
+colnames(genes) <- c("gene_id", "seq_id", "start", "end", "width", "strand", "Orthogroups", "bin_id")
+
+#links
+link_1 <- psl_becei_bovis[, c("start", "end","width", "seq_id", "start2", "end2","width2","seq_id2")]
+link_2 <- psl_bovis_becei[, c("start", "end","width", "seq_id", "start2", "end2","width2","seq_id2")]
+links <- rbind(link_1, link_2)
+
+#sub
+sub_genes <- genes %>% 
+  filter(start < 1000 & end < 1000)
+
+sub_links <- links %>%
+  filter(seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+
+#Plot 
+
+g <- gggenomes(genes = sub_genes, links = sub_links)+
+  geom_seq()+
+  geom_gene()+
+  geom_link()+
+  geom_bin_label()
+
+g 
+
+
+```
+```{r}
+test <- elegans[, c("scaff","start", "end", "transcript_id", "type")]
+test <- test %>%  mutate(width = end-start)  %>% select(-c(start, end))
+test_psl <- psl_becei[, c("scaff","start","end", "gene_id")]
+test_psl <- test_psl %>%  mutate(width = end-start) %>% select(-c(start, end))
+colnames(test_psl)[2] <- c("transcript_id")
+result <- merge(test_psl, test, by=c("transcript_id", "scaff"), all.x = TRUE)
+```
+
