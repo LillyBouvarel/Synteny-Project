@@ -1,0 +1,347 @@
+---
+title: "functions"
+author: "Lilly"
+date: "2023-03-06"
+output: html_document
+---
+
+```{r}
+library(rtracklayer)
+library(tidyverse)
+library(gggenomes)
+```
+
+```{r}
+## Functions to subset data
+
+#Genes and links 
+
+#Subsetting by length from start to end 
+subset_by_length <- function(g = genes, min, max){
+  sub_genes <- g %>% filter((start < max & start > min) & (end < max & end > min))
+  return(sub_genes)
+}
+
+#Subsetting by gene ID (C.elegans)
+select_by_genes <- function(g = genes,list_genes){
+    sub_genes <- g %>% group_by(seq_id) %>% filter(gene_id %in% list_genes)
+    return(sub_genes)
+}
+
+#Subsetting by gene ID and start/end 
+select_by_both <- function(g = genes, list_genes, min, max){
+    sub_genes <- g %>% group_by(seq_id) %>% filter(gene_id %in% list_genes & between(start, min, max) & between(end, min, max))
+    return(sub_genes)
+}
+```
+
+```{r}
+## Functions to subset data
+
+#subsetting in moving right and left (100 pb move)
+move_right <- function(genes){
+    sub_genes <- genes %>% filter(between(start, min(start)+100, max(start)+100) & between(end, min(end)+100,max(end)+100))
+    return(sub_genes)
+}
+
+move_left <- function(genes){
+  sub_genes <- genes %>% filter(between(start, min(start)-100, max(start)-100) & between(end, min(end)-100, max(end)-100))
+  return(sub_genes)
+}
+
+#subsetting by chromosome on C.elegans
+select_by_chromosomes <- function(scaff, genes){
+  sub_genes <- genes %>% filter(scaff %in% scaff)
+  return(sub_genes)
+}
+
+#Subsetting by species 
+select_by_species <- function(species, genes){
+  sub_genes <- genes %>% filter(bin_id %in% species)
+  return(sub_genes)
+}
+
+#genes = start, end, gene_id, scaff, bin_id, seq_id, orthogroups, strand, length 
+#links = start, end, seq_id, start2, end2, seq_id2
+```
+
+```{r}
+## user singletons 
+user_singletons <- function(g = genes, links_df = links_df_5, list_genes = NULL, min = NULL, max = NULL){
+  
+  if(is.null(list_genes) & (!is.null(min) & !is.null(max))){
+    
+    sub_genes <- subset_by_length(g =genes, min, max)
+    sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+    l <- list(sub_genes, sub_links)
+    return(l)
+    
+  }else if(!is.null(list_genes) & (is.null(min) & is.null(max))){
+    
+		sub_genes <- select_by_genes(g= genes, list_genes)
+		sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+    l <- list(sub_genes, sub_links)
+    return(l)
+    
+	}else if(!is.null(list_genes) & (!is.null(max) & !is.null(min))){
+	  
+	  sub_genes <- select_by_both(g= genes, list_genes, min, max)
+	  sub_links <- filter(links_df, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+    l <- list(sub_genes, sub_links)
+    return(l)
+    
+	}else{
+	  
+		return("ERROR : you must fill something")
+	}
+}
+  
+ggg <- function(list){
+  
+  sub_genes <- list[1] %>% as.data.frame()
+  sub_links <- list[2] %>%  as.data.frame()
+  
+  if(nrow(sub_genes) == 0) {
+    
+    print("Nothing found in sub_genes. Please select singletons genes")
+    
+  }else if(nrow(sub_links) == 0){
+    
+    p <- gggenomes(genes = sub_genes) +
+      geom_gene(aes(fill=Orthogroup))+
+      geom_seq()+
+      geom_bin_label() +
+      geom_seq_label()
+    return(p)
+    
+  }else{
+    p<- gggenomes(genes = sub_genes, links= sub_links) +
+      geom_gene(aes(fill=Orthogroup))+
+      geom_seq()+
+      geom_bin_label() +
+      geom_seq_label() +
+      geom_link()
+  return(p)
+    
+  }
+}
+
+```
+
+```{r}
+## user singletons 
+user_singletons_2 <- function(s = seqs, g = genes, l = links_df_5, list_genes = NULL, min = NULL, max = NULL){
+  
+  if(is.null(list_genes) & (!is.null(min) & !is.null(max))){
+    
+    sub_genes <- subset_by_length(g =genes, min, max)
+    sub_seqs <- s %>% filter(seq_id %in% sub_genes$seq_id & gene_id %in% sub_genes$gene_id) 
+    sub_links <- filter(l, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+    l <- list(sub_genes, sub_seqs, sub_links)
+    return(l)
+    
+  }else if(!is.null(list_genes) & (is.null(min) & is.null(max))){
+    
+		sub_genes <- select_by_genes(g= genes, list_genes)
+		sub_seqs <- s %>% filter(seq_id %in% sub_genes$seq_id & gene_id %in% sub_genes$gene_id) 
+		sub_links <- l %>% filter( seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+    l <- list(sub_genes, sub_seqs, sub_links)
+    return(l)
+    
+	}else if(!is.null(list_genes) & (!is.null(max) & !is.null(min))){
+	  
+	  sub_genes <- select_by_both(g= genes, list_genes, min, max)
+	  sub_seqs <- s %>% filter(seq_id %in% sub_genes$seq_id & gene_id %in% sub_genes$gene_id) 
+	  sub_links <- l %>%  filter( seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id)
+    l <- list(sub_genes, sub_seqs, sub_links)
+    return(l)
+    
+	}else{
+	  
+		return("ERROR : you must fill something")
+	}
+}
+  
+ggg_2 <- function(list){
+  
+  sub_genes <- list[1] %>% as.data.frame() %>% distinct()
+  sub_seqs <- list[2] %>% as.data.frame() %>% distinct()
+  sub_links <- list[3] %>%  as.data.frame() %>% distinct()
+  
+  if(nrow(sub_genes) == 0){
+    
+    print("Nothing found in sub_genes. Please select singletons genes")
+    
+  }else if(nrow(sub_links) == 0){
+    
+    p <- gggenomes(seqs = sub_seqs, genes = sub_genes) +
+      geom_gene(aes(fill=Orthogroup))+
+      geom_seq()+
+      geom_bin_label() +
+      geom_seq_label()
+    return(p)
+    
+  }else{
+    p<- gggenomes(seqs = sub_seqs, genes = sub_genes, links= sub_links) +
+      geom_gene(aes(fill=Orthogroup))+
+      geom_seq()+
+      geom_bin_label() +
+      geom_seq_label() +
+      geom_link()
+  return(p)
+    
+  }
+}
+
+```
+
+```{r}
+## subset
+subset <- function(s = seqs, g = genes, l = links_df_5, list_genes = NULL, min = NULL, max = NULL){
+
+  
+  if(is.null(list_genes) & (!is.null(min) & !is.null(max))){
+    
+    sub_genes_1 <- subset_by_length(g, min, max)
+    
+    #Then, group by seq_id and take the min start and max end (so there will be only one "gene" per scaffold)
+    sub_genes <- sub_genes_1 %>%
+      group_by(seq_id) %>%
+      mutate(start_min = min(start), end_max = max(end), new_length = end_max- start_min) %>%
+      select(-c(start, end, length, transcript_id, X)) %>%
+      filter(!duplicated(seq_id)) %>%
+      rename(start ="start_min", end = "end_max", length = "new_length")
+    
+    #Subset seqs : -500/+500 size
+    sub_seqs_1 <- s %>% filter(seq_id %in% sub_genes$seq_id & gene_id %in% sub_genes$gene_id) 
+    
+    #Then, group by seq_id and take the min start and max end (so there will be only one "gene" per scaffold)
+    sub_seqs <- sub_seqs_1 %>%
+      group_by(seq_id) %>%
+      mutate(start_min = min(start), end_max = max(end), new_length = end_max- start_min) %>%
+      select(-c(start, end, length, gene_id)) %>% filter(!duplicated(seq_id)) %>%
+      rename(start ="start_min", end = "end_max", length = "new_length")
+    
+    #Subset links
+    sub_links <- filter(l, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id) %>%
+      distinct() %>%
+      select(-X) %>%
+      filter(start %in% sub_genes$start | end %in% sub_genes$end | start2 %in% sub_genes$start | end2 %in% sub_genes$end) %>%
+      group_by(seq_id, seq_id2) %>% mutate(start_min = min(start), end_max = max(end)) %>%
+      select(-c(start, end)) %>% rename(start ="start_min", end = "end_max") %>%
+      mutate(start_min2 = min(start2), end_max2 = max(end2)) %>%
+      select(-c(start2, end2)) %>% rename(start2 ="start_min2", end2 = "end_max2")
+
+    l <- list(sub_genes, sub_seqs, sub_links)
+    return(l)
+    
+  }else if(!is.null(list_genes) & (is.null(min) & is.null(max))){
+    
+    sub_genes_1 <- select_by_genes(g, list_genes)
+    
+    #Then, group by seq_id and take the min start and max end (so there will be only one "gene" per scaffold)
+    sub_genes <- sub_genes_1 %>%
+      group_by(seq_id) %>%
+      mutate(start_min = min(start), end_max = max(end), new_length = end_max- start_min) %>%
+      select(-c(start, end, length, transcript_id, X)) %>%
+      filter(!duplicated(seq_id)) %>%
+      rename(start ="start_min", end = "end_max", length = "new_length")
+    
+    #Subset seqs : -500/+500 size
+    sub_seqs_1 <- s %>% filter(seq_id %in% sub_genes$seq_id & gene_id %in% sub_genes$gene_id) 
+    
+    #Then, group by seq_id and take the min start and max end (so there will be only one "gene" per scaffold)
+    sub_seqs <- sub_seqs_1 %>%
+      group_by(seq_id) %>%
+      mutate(start_min = min(start), end_max = max(end), new_length = end_max- start_min) %>%
+      select(-c(start, end, length, gene_id)) %>% filter(!duplicated(seq_id)) %>%
+      rename(start ="start_min", end = "end_max", length = "new_length")
+    
+    #Subset links : fit sub_genes AND sub_seqs at the same time 
+    sub_links <- filter(l, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id) %>%
+        distinct() %>%
+        select(-X) %>%
+        filter(start %in% sub_genes$start | end %in% sub_genes$end | start2 %in% sub_genes$start | end2 %in% sub_genes$end) %>%
+        group_by(seq_id, seq_id2) %>% mutate(start_min = min(start), end_max = max(end)) %>%
+        select(-c(start, end)) %>% rename(start ="start_min", end = "end_max") %>%
+        mutate(start_min2 = min(start2), end_max2 = max(end2)) %>%
+        select(-c(start2, end2)) %>% rename(start2 ="start_min2", end2 = "end_max2")
+
+    l <- list(sub_genes, sub_seqs, sub_links)
+    return(l)
+    
+  }else if(!is.null(list_genes) & (!is.null(max) & !is.null(min))){
+	  
+	  sub_genes_1 <- select_by_both(g= genes, list_genes, min, max)
+	  
+	  #Then, group by seq_id and take the min start and max end (so there will be only one "gene" per scaffold)
+    sub_genes <- sub_genes_1 %>%
+      group_by(seq_id) %>%
+      mutate(start_min = min(start), end_max = max(end), new_length = end_max- start_min) %>%
+      select(-c(start, end, length, transcript_id, X)) %>%
+      filter(!duplicated(seq_id)) %>%
+      rename(start ="start_min", end = "end_max", length = "new_length")
+    
+    #Subset seqs : -500/+500 size
+    sub_seqs_1 <- s %>% filter(seq_id %in% sub_genes$seq_id & gene_id %in% sub_genes$gene_id) 
+    
+    #Then, group by seq_id and take the min start and max end (so there will be only one "gene" per scaffold)
+    sub_seqs <- sub_seqs_1 %>%
+      group_by(seq_id) %>%
+      mutate(start_min = min(start), end_max = max(end), new_length = end_max- start_min) %>%
+      select(-c(start, end, length, gene_id)) %>% filter(!duplicated(seq_id)) %>%
+      rename(start ="start_min", end = "end_max", length = "new_length")
+    
+    #Subset links : fit sub_genes AND sub_seqs at the same time 
+    sub_links <- filter(l, seq_id %in% sub_genes$seq_id & seq_id2 %in% sub_genes$seq_id) %>%
+          distinct() %>%
+          select(-X) %>%
+          filter(start %in% sub_genes$start | end %in% sub_genes$end | start2 %in% sub_genes$start | end2 %in% sub_genes$end) %>%
+          group_by(seq_id, seq_id2) %>% mutate(start_min = min(start), end_max = max(end)) %>%
+          select(-c(start, end)) %>% rename(start ="start_min", end = "end_max") %>%
+          mutate(start_min2 = min(start2), end_max2 = max(end2)) %>%
+          select(-c(start2, end2)) %>% rename(start2 ="start_min2", end2 = "end_max2")
+
+    l <- list(sub_genes, sub_seqs, sub_links)
+    return(l)
+    
+  }else{
+	  
+		return("ERROR : you must fill something")
+	}
+}
+
+
+ggg_2 <- function(list){
+  
+  sub_genes <- list[1] %>% as.data.frame() %>% distinct()
+  sub_seqs <- list[2] %>% as.data.frame() %>% distinct()
+  sub_links <- list[3] %>%  as.data.frame() %>% distinct()
+  
+  if(nrow(sub_genes) == 0){
+    
+    print("Nothing found in sub_genes. Please select singletons genes")
+    
+  }else if(nrow(sub_links) == 0){
+    
+    p <- gggenomes(seqs = sub_seqs, genes = sub_genes) +
+      geom_gene(aes(fill=Orthogroup))+
+      geom_seq()+
+      geom_bin_label() +
+      geom_seq_label()
+    return(p)
+    
+  }else{
+    p<- gggenomes(seqs = sub_seqs, genes = sub_genes, links= sub_links) +
+      geom_gene(aes(fill=Orthogroup))+
+      geom_seq()+
+      geom_bin_label() +
+      geom_seq_label() +
+      geom_link()
+  return(p)
+    
+  }
+}
+
+```
+
