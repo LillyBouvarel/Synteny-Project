@@ -1,0 +1,445 @@
+---
+title: "Singletons_pipeline_genes"
+author: "Lilly"
+date: "2023-03-20"
+output: html_document
+---
+
+```{r}
+library(rtracklayer)
+library(tidyverse)
+library(gggenomes)
+```
+
+## Prepare the data 
+
+```{r}
+## Load files (3 types)
+
+#Load tyded gtf (csv)
+bovis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/bovis.csv")
+becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/becei.csv")
+panamensis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/panamensis.csv")
+inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/inopinata.csv")
+elegans <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans.csv")
+tropicalis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/tropicalis.csv")
+remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/remanei.csv")
+latens <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/latens.csv")
+tribulationis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/tribulationis.csv")
+briggsae <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/briggsae.csv")
+nigoni <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/nigoni.csv")
+
+#Load tyded psl files (csv)
+psl_bovis_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/bovis_becei.csv")
+psl_becei_panamensis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/becei_panamensis.csv")
+psl_panamensis_inopinata <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/panamensis_inopinata.csv")
+psl_inopinata_elegans <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/inopinata_elegans.csv")
+psl_elegans_tropicalis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_tropicalis.csv")
+psl_tropicalis_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/tropicalis_remanei.csv")
+psl_remanei_latens <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/remanei_latens.csv")
+psl_latens_tribulationis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/latens_tribulationis.csv")
+psl_tribulationis_briggsae <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/tribulationis_briggsae.csv")
+psl_briggsae_nigoni <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/briggsae_nigoni.csv")
+
+#Load csv files of pairwise alignment with C.elegans 
+aligned_coord_bovis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_bovis.csv")
+aligned_coord_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_becei.csv")
+aligned_coord_panamensis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_panamensis.csv")
+aligned_coord_inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_inopinata.csv")
+aligned_coord_tropicalis  <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_tropicalis.csv")
+aligned_coord_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_remanei.csv")
+aligned_coord_latens <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_latens.csv")
+aligned_coord_tribulationis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_tribulationis.csv")
+aligned_coord_briggsae <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_briggsae.csv")
+aligned_coord_nigoni <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/aligned_coord_nigoni.csv")
+
+
+#Load psl pairwise alignment
+elegans_bovis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_bovis.csv")
+elegans_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_becei.csv")
+elegans_panamensis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_panamensis.csv")
+elegans_inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_inopinata.csv")
+elegans_tropicalis  <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_tropicalis.csv")
+elegans_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_remanei.csv")
+elegans_latens <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_latens.csv")
+elegans_tribulationis <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_tribulationis.csv")
+elegans_briggsae <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_briggsae.csv")
+elegans_nigoni <- read.csv( "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/elegans_nigoni.csv")
+```
+
+### Prepare data before the pipeline 
+
+```{r}
+## Clean it 
+
+bovis <-  bovis  %>% select(-X)
+becei <- becei  %>% select(-X)
+panamensis <- panamensis  %>% select(-X)
+inopinata <- inopinata  %>% select(-X)
+elegans <- elegans  %>% select(-X)
+tropicalis <- tropicalis  %>% select(-X)
+remanei <- remanei  %>% select(-X)
+latens <- latens  %>% select(-X)
+tribulationis <- tribulationis  %>% select(-X)
+briggsae <- briggsae  %>% select(-X)
+nigoni <- nigoni  %>% select(-X)
+
+aligned_coord_becei <- aligned_coord_becei  %>% select(-X)
+aligned_coord_bovis <- aligned_coord_bovis  %>% select(-X)
+aligned_coord_panamensis <- aligned_coord_panamensis  %>% select(-X)
+aligned_coord_inopinata <- aligned_coord_inopinata  %>% select(-X)
+aligned_coord_tropicalis <- aligned_coord_tropicalis  %>% select(-X)
+aligned_coord_remanei <- aligned_coord_remanei  %>% select(-X)
+aligned_coord_latens <- aligned_coord_latens %>% select(-X)
+aligned_coord_tribulationis <- aligned_coord_tribulationis  %>% select(-X)
+aligned_coord_briggsae <- aligned_coord_briggsae  %>% select(-X)
+aligned_coord_nigoni <- aligned_coord_nigoni  %>% select(-X)
+
+bovis_becei <- psl_bovis_becei  %>% select(-X)
+becei_panamensis <- psl_becei_panamensis  %>% select(-X)
+panamensis_inopinata <- psl_panamensis_inopinata  %>% select(-X)
+inopinata_elegans <- psl_inopinata_elegans  %>% select(-X)
+elegans_tropicalis <- psl_elegans_tropicalis  %>% select(-X)
+tropicalis_remanei <- psl_tropicalis_remanei  %>% select(-X)
+remanei_latens <- psl_remanei_latens  %>% select(-X)
+latens_tribulationis <- psl_latens_tribulationis  %>% select(-X)
+tribulationis_briggsae <-psl_tribulationis_briggsae  %>% select(-X)
+briggsae_nigoni <-psl_briggsae_nigoni  %>% select(-X)
+
+elegans_becei <- elegans_becei  %>% select(-X)
+elegans_bovis <- elegans_bovis  %>% select(-X)
+elegans_panamensis <-elegans_panamensis  %>% select(-X)
+elegans_inopinata <- elegans_inopinata  %>% select(-X)
+elegans_tropicalis <- elegans_tropicalis  %>% select(-X)
+elegans_remanei <- elegans_remanei  %>% select(-X)
+elegans_latens <- elegans_latens %>% select(-X)
+elegans_tribulationis <-elegans_tribulationis  %>% select(-X)
+elegans_briggsae <- elegans_briggsae  %>% select(-X)
+elegans_nigoni <- elegans_nigoni  %>% select(-X)
+```
+
+```{r}
+## Step 1 : a list of single-copy genes 
+
+#Load it and clean it
+duplicate_singletons <- read.table("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/Others/Duplicate_gene_in_C.elegans_genome.txt")
+colnames(duplicate_singletons) <- c("gene_id", "Orthogroup", "dN/dS(w)", "Branch")
+duplicate_singletons <- duplicate_singletons[-1,]
+
+#Select singletons  
+singletons <- duplicate_singletons %>% filter(Branch == "Singletons") %>% select(-c("dN/dS(w)", "Branch"))
+```
+
+```{r}
+## Step 2 : get C.elegans gene coordinates 
+
+#Get the coordinates of singletons 
+singletons_elegans <- inner_join(elegans, singletons, by = "gene_id")
+```
+
+```{r}
+## Step 3 : Get aligned coordinates in other 10 species
+
+#Bovis
+#Merge the aligned coordinates with elegans with the singletons elegans
+singletons_bovis <- merge(aligned_coord_bovis, singletons_elegans, by = c("gene_id"))
+#Remove the elegans columns and keep the bovis columns
+singletons_bovis <- singletons_bovis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_bovis <- singletons_bovis %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Becei
+singletons_becei <- merge(aligned_coord_becei, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_becei <- singletons_becei %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_becei <- singletons_becei %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Panamensis
+singletons_panamensis <- merge(aligned_coord_panamensis, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_panamensis <- singletons_panamensis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_panamensis <- singletons_panamensis %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Inopinata
+singletons_inopinata <- merge(aligned_coord_inopinata, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_inopinata <- singletons_inopinata %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_inopinata <- singletons_inopinata %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Tropicalis
+singletons_tropicalis <- merge(aligned_coord_tropicalis, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_tropicalis <- singletons_tropicalis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_tropicalis <- singletons_tropicalis %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Remanei
+singletons_remanei <- merge(aligned_coord_remanei, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_remanei <- singletons_remanei %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_remanei <- singletons_remanei %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Latens
+singletons_latens <- merge(aligned_coord_latens, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_latens <- singletons_latens %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_latens <- singletons_latens %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Tribulationis
+singletons_tribulationis <- merge(aligned_coord_tribulationis, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_tribulationis <- singletons_tribulationis %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_tribulationis <- singletons_tribulationis %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Briggsae
+singletons_briggsae <- merge(aligned_coord_briggsae, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_briggsae <- singletons_briggsae %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x")
+singletons_briggsae <- singletons_briggsae %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+
+#Nigoni
+singletons_nigoni <- merge(aligned_coord_nigoni, singletons_elegans, by = "gene_id")
+#Remove the elegans columns and keep the bovis columns
+singletons_nigoni <- singletons_nigoni %>% select(-c(scaff.y, start.y, end.y, seq_id.y, strand.y, width, length, type)) %>% rename(scaff = "scaff.x", start = "start.x", end = "end.x", strand = "strand.x", seq_id = "seq_id.x") %>%  distinct() 
+singletons_nigoni <- singletons_nigoni %>% group_by(seq_id, gene_id) %>% mutate(start = min(start), end = max(end), length = end - start) %>% slice(1)
+```
+
+```{r}
+#Statistics : Have statistics on the number of  C. elegans genes that do not have aligned regions in all 10 species
+
+#Singletons_species
+singletons_species <- rbind(singletons_bovis,singletons_becei,singletons_panamensis,singletons_inopinata, singletons_elegans, singletons_tropicalis,singletons_remanei, singletons_latens,singletons_tribulationis,singletons_briggsae,singletons_nigoni)
+
+#Create a bin_id column to differentiate each species 
+singletons_species <- singletons_species %>% mutate(bin_id = str_extract_all(seq_id, "^[:alpha:]+"))
+
+#Create a list of species that we want our genes present in 
+list <- c("bovis", "becei", "panamensis", "inopinata", "elegans", "tropicalis", "remanei", "latens", "tribulationis", "briggsae", "nigoni")
+
+#Filter genes that do not have aligned regions in all 10 species 
+elegans_genes_not_aligned <- singletons_species %>% group_by(gene_id) %>% filter(!all(list %in% bin_id)) %>% select(gene_id) %>% distinct()
+
+# we got 74 singletons that are not aligned with every species 
+```
+
+```{r}
+## Step 6 : Find genes in the aligned region in other 10 species
+
+#Function overlap to find the transcripts that are overlapping with the aligned coordinates in the GTF files 
+overlap <- function(filtered_species, singletons_species){
+  
+n <- 1
+l <- list()
+
+  for(i in 1 : nrow(filtered_species)){
+    for(j in 1 : nrow(singletons_species)){
+      
+      if((filtered_species$start[i] >= singletons_species$start[j] & filtered_species$start[i] <= singletons_species$end[j]) |
+         (filtered_species$end[i] >= singletons_species$start[j] & filtered_species$end[i] <= singletons_species$end[j]) |
+         (filtered_species$start[i] <= singletons_species$start[j] & filtered_species$end[i] >= singletons_species$end[j])){
+        
+        
+        l[[n]] <- filtered_species[i,]
+        n <- n + 1
+      }
+    }
+  }
+  return(l)
+}
+```
+
+```{r}
+#Application of the function reconfigure 
+overlap_bovis <- overlap(bovis, singletons_bovis)
+
+# overlap_becei <- overlap(becei, singletons_becei)
+# overlap_panamensis <- overlap(panamensis, singletons_panamensis)
+# overlap_inopinata <- overlap(inopinata, singletons_inopinata)
+# overlap_tropicalis <- overlap(tropicalis, singletons_tropicalis)
+# overlap_remanei <- overlap(remanei, singletons_remanei)
+# overlap_latens <- overlap(latens, singletons_latens)
+# overlap_tribulationis<- overlap(tribulationis, singletons_tribulationis)
+# overlap_briggsae <- overlap(briggsae, singletons_briggsae)
+# overlap_nigoni <- overlap(nigoni, singletons_nigoni)
+```
+
+```{r}
+#Lists to dataframes
+overlap_bovis <- as.data.frame(do.call(rbind, overlap_bovis))
+
+# overlap_becei <- as.data.frame(do.call(rbind, overlap_becei))
+# overlap_panamensis <- as.data.frame(do.call(rbind, overlap_panamensis))
+# overlap_inopinata <- as.data.frame(do.call(rbind, overlap_inopinata))
+# overlap_tropicalis <- as.data.frame(do.call(rbind, overlap_tropicalis))
+# overlap_remanei <- as.data.frame(do.call(rbind, overlap_remanei))
+# overlap_latens <- as.data.frame(do.call(rbind, overlap_latens))
+# overlap_tribulationis <- as.data.frame(do.call(rbind, overlap_tribulationis))
+# overlap_briggsae <- as.data.frame(do.call(rbind, overlap_briggsae))
+# overlap_nigoni <- as.data.frame(do.call(rbind, overlap_nigoni))
+```
+
+```{r}
+#If multiple transcripts correspond to one gene, take the Min [Start] and Max [End] to get gene coordinates
+test2 <- test %>% distinct() %>% select(-type, length) %>% rename(length = "width")
+
+# overlap_becei <- overlap_becei %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_panamensis <- overlap_panamensis %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_inopinata <- overlap_inopinata %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_tropicalis <- overlap_tropicalis %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_remanei <- overlap_remanei %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_latens <- overlap_latens %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_tribulationis <- overlap_tribulationis %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_briggsae <- overlap_briggsae %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+# overlap_nigoni <- overlap_nigoni %>% group_by(scaff, gene_id) %>% mutate(start =min(start), end = max(end), length = end-start) %>% slice(1)
+```
+
+```{r}
+#Save 
+write.csv(overlap_bovis,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_bovis.csv")
+# write.csv(overlap_becei,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_becei.csv")
+# write.csv(overlap_panamensis,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_panamensis.csv")
+# write.csv(overlap_inopinata,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_inopinata.csv")
+# write.csv(overlap_tropicalis,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_tropicalis.csv")
+# write.csv(overlap_remanei,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_remanei.csv")
+# write.csv(overlap_latens,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_latens.csv")
+# write.csv(overlap_tribulationis,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_tribulationis.csv")
+# write.csv(overlap_briggsae,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_briggsae.csv")
+# write.csv(overlap_nigoni,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/overlap_nigoni.csv")
+```
+
+```{r}
+overlap_bovis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_bovis.csv")
+overlap_becei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_becei.csv")
+overlap_panamensis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_panamensis.csv")
+overlap_inopinata <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_inopinata.csv")
+overlap_tropicalis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_tropicalis.csv")
+overlap_remanei <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_remanei.csv")
+overlap_latens <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_latens.csv")
+overlap_tribulationis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_tribulationis.csv")
+overlap_briggsae <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_briggsae.csv")
+overlap_nigoni <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/overlap_nigoni.csv")
+```
+
+```{r}
+#Statistics
+#How many genes overlapped with the aligned singletons
+n <- test2 %>% select(gene_id) %>% distinct()
+```
+
+```{r}
+#Extend the aligned coordinates to covert the enterity of genes that show overlapping 
+reconfigure <- function(filtered_species, singletons_species){
+  
+n <- 1
+l <- list()
+
+  for(i in 1 : nrow(filtered_species)){
+    for(j in 1 : nrow(singletons_species)){
+      
+      if(filtered_species$start[i] >= singletons_species$start[j] & filtered_species$start[i] < singletons_species$end[j] & filtered_species$end[i] <= singletons_species$end[j]){
+        
+        l[[n]] <- singletons_species[j,]
+        n <- n + 1
+      }
+      
+      if(filtered_species$start[i] >= singletons_species$start[j] & filtered_species$start[i] <= singletons_species$end[j] & filtered_species$end[i] > singletons_species$end[j]){
+        
+        singletons_species$end[j] <- filtered_species$end[i]
+        l[[n]] <- singletons_species[j,]
+        n <- n + 1
+      }
+      
+      if(filtered_species$end[i] >= singletons_species$start[j] & filtered_species$end[i] <= singletons_species$end[j] & filtered_species$start[i] < singletons_species$start[j]){
+        
+        singletons_species$start[j] <- filtered_species$start[i]
+        l[[n]] <- singletons_species[j,]
+        n <- n + 1
+      }
+      
+      if(filtered_species$start[i] < singletons_species$start[j] & filtered_species$end[i] > singletons_species$end[j]){
+        
+        singletons_species$start[j] <- filtered_species$start[i]
+        singletons_species$end[j] <- filtered_species$end[i]
+        l[[n]] <- singletons_species[j,]
+        n <- n + 1
+      }
+    }
+  }
+  return(l)
+}
+```
+
+```{r}
+#Application of the reconfigure function 
+reconfigured_singletons_bovis <- reconfigure(bovis, singletons_bovis)
+```
+
+```{r}
+#Convert list to data frame 
+reconfigured_singletons_bovis <- as.data.frame(do.call(rbind, reconfigured_singletons_bovis))
+
+```
+
+```{r}
+#Clean it 
+reconfigured_singletons_bovis <- reconfigured_singletons_bovis %>% distinct() %>% select(-type, length) %>% rename(length = "width")
+
+```
+
+```{r}
+#Save it 
+write.csv(reconfigured_singletons_bovis,"C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV_2/reconfigured_singletons_bovis.csv")
+```
+
+```{r}
+#Read it 
+overlap_bovis <- read.csv("C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/reconfigured_singletons_bovis.csv")
+
+```
+
+```{r}
+#Statistics 
+
+```
+
+```{r}
+## Step 7 : Use the alignment file to find the alignment between two neighboring species on the phylogenetic tree based on the reconfigured  coordinates above
+
+```
+
+```{r}
+## Create genes and links files for gggenomes
+
+#Links
+links <- rbind(links_bovis_becei, links_becei_panamensis, links_panamensis_inopinata, links_inopinata_elegans,links_elegans_tropicalis, links_tropicalis_remanei,links_remanei_latens,  links_latens_tribulationis,links_tribulationis_briggsae,links_briggsae_nigoni)
+
+
+
+```
+
+```{r}
+#Statistics : Have statistics on the number of  C. elegans genes that do not have aligned regions in all 10 species
+
+#Create a bin_id column to differentiate each species 
+links <- links %>% mutate(bin_id = str_extract_all(seq_id, "^[:alpha:]+"))
+
+#Create a list of species that we want our genes present in 
+list <- c("bovis", "becei", "panamensis", "inopinata", "elegans", "tropicalis", "remanei", "latens", "tribulationis", "briggsae", "nigoni")
+
+#Filter genes that do not have aligned regions in all 10 species 
+elegans_genes_not_aligned <- genes %>% group_by(gene_id) %>% filter(!all(list %in% bin_id)) %>% select(gene_id) %>% distinct()
+
+# we got 112 singletons that are not aligned with every species 
+```
+
+```{r}
+l <- list()
+for (i in 1:10){
+  l[[i]] <- elegans_genes[i,]
+}
+
+test2 <- as.data.frame(do.call(rbind, l))
+
+test <- overlap_bovis %>% as_tibble_col()
+test <- test %>% as.data.frame()
+
+```
+
