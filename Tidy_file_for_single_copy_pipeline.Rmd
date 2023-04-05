@@ -1,0 +1,328 @@
+---
+title: "Tidy_files_for_single_copy_pipeline"
+author: "Lilly"
+date: "2023-04-04"
+output: html_document
+---
+
+```{r}
+library(rtracklayer)
+library(tidyverse)
+library(gggenomes)
+```
+
+## Prepare the data 
+
+```{r, message=FALSE}
+## Import gtf files pre-filtered by type "gene" 
+
+briggsae <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_briggsae.PRJNA10731.WBPS16.canonical_geneset.gtf")
+briggsae <- as.data.frame(briggsae)
+
+inopinata <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_inopinata.PRJDB5687.WBPS16.canonical_geneset.gtf")
+inopinata <-  as.data.frame(inopinata)
+
+latens <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_latens.PRJNA248912.WBPS16.canonical_geneset.gtf")
+latens <-  as.data.frame(latens)
+
+nigoni <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_nigoni.PRJNA384657.WBPS16.canonical_geneset.gtf")
+nigoni <-  as.data.frame(nigoni)
+
+panamensis <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_panamensis.PRJEB28259.WBPS16.canonical_geneset.gtf")
+panamensis <- as.data.frame(panamensis)
+
+remanei <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_remanei.PRJNA577507.WBPS16.canonical_geneset.gtf")
+remanei <- as.data.frame(remanei)
+
+tribulationis <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_tribulationis.PRJEB12608.WBPS16.canonical_geneset.gtf")
+tribulationis <- as.data.frame(tribulationis)
+
+tropicalis <- rtracklayer::import("../R_files/Filtered_GTF/filtered_caenorhabditis_tropicalis.PRJNA53597.WBPS16.canonical_geneset.gtf")
+tropicalis <- as.data.frame(tropicalis)
+
+
+```
+
+```{r}
+## Add seq_id in GTF files to match gggenomes requirements 
+
+colnames(elegans)[1] <- "scaff"
+elegans$seq_id = paste("elegans", elegans$scaff ,sep = "_")
+
+colnames(becei)[1] <- "scaff"
+becei$seq_id = paste("becei", becei$scaff ,sep = "_")
+
+colnames(bovis)[1] <- "scaff"
+bovis$seq_id = paste("bovis", bovis$scaff ,sep = "_")
+
+colnames(briggsae)[1] <- "scaff"
+briggsae$seq_id = paste("briggsae", briggsae$scaff ,sep = "_")
+
+colnames(inopinata)[1] <- "scaff"
+inopinata$seq_id = paste("inopinata", inopinata$scaff ,sep = "_")
+
+colnames(latens)[1] <- "scaff"
+latens$seq_id = paste("latens", latens$scaff ,sep = "_")
+
+colnames(nigoni)[1] <- "scaff"
+nigoni$seq_id = paste("nigoni", nigoni$scaff ,sep = "_")
+
+colnames(panamensis)[1] <- "scaff"
+panamensis$seq_id = paste("panamensis", panamensis$scaff ,sep = "_")
+
+colnames(remanei)[1] <- "scaff"
+remanei$seq_id = paste("remanei", remanei$scaff ,sep = "_")
+
+colnames(tribulationis)[1] <- "scaff"
+tribulationis$seq_id = paste("tribulationis", tribulationis$scaff ,sep = "_")
+
+colnames(tropicalis)[1] <- "scaff"
+tropicalis$seq_id = paste("tropicalis", tropicalis$scaff ,sep = "_")
+```
+
+```{r}
+#Select the interesting columns : seq_id, scaff, type, start, end, width, strand, gene_id
+bovis <- bovis[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+becei <- becei[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+panamensis <- panamensis[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+inopinata <- inopinata[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+elegans <- elegans[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+tropicalis <- tropicalis[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+remanei <- remanei[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+latens <- latens[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+tribulationis <- tribulationis[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+briggsae <- briggsae[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+nigoni <- nigoni[, c("seq_id", "scaff" , "type", "start", "end", "width", "strand", "gene_id", "gene_biotype")]
+
+```
+
+```{r}
+#Save GTF (genes)
+write.csv(bovis, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/bovis.csv")
+write.csv(becei, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/becei.csv")
+write.csv(panamensis, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/panamensis.csv")
+write.csv(inopinata, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/inopinata.csv")
+write.csv(elegans, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/elegans.csv")
+write.csv(tropicalis, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tropicalis.csv")
+write.csv(remanei, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/remanei.csv")
+write.csv(latens, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/latens.csv")
+write.csv(tribulationis, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/tribulationis.csv")
+write.csv(briggsae, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/briggsae.csv")
+write.csv(nigoni, "C:/Users/Lilly/OneDrive/Documents/Travail/Synteny_project/R_files/CSV/nigoni.csv")
+```
+
+```{r, message=FALSE}
+## Import gtf files 
+
+elegans <- rtracklayer::import("../R_files/GTF/caenorhabditis_elegans.PRJNA13758.WBPS16.canonical_geneset.gtf")
+elegans=as.data.frame(elegans)
+
+becei <- rtracklayer::import("../R_files/GTF/caenorhabditis_becei.PRJEB28243.WBPS16.canonical_geneset.gtf")
+becei = as.data.frame(becei)
+
+bovis <- rtracklayer::import("../R_files/GTF/caenorhabditis_bovis.PRJEB34497.WBPS16.canonical_geneset.gtf")
+bovis=as.data.frame(bovis)
+
+briggsae <- rtracklayer::import("../R_files/GTF/caenorhabditis_briggsae.PRJNA10731.WBPS16.canonical_geneset.gtf")
+briggsae <- as.data.frame(briggsae)
+
+inopinata <- rtracklayer::import("../R_files/GTF/caenorhabditis_inopinata.PRJDB5687.WBPS16.canonical_geneset.gtf")
+inopinata <-  as.data.frame(inopinata)
+
+latens <- rtracklayer::import("../R_files/GTF/caenorhabditis_latens.PRJNA248912.WBPS16.canonical_geneset.gtf")
+latens <-  as.data.frame(latens)
+
+nigoni <- rtracklayer::import("../R_files/GTF/caenorhabditis_nigoni.PRJNA384657.WBPS16.canonical_geneset.gtf")
+nigoni <-  as.data.frame(nigoni)
+
+panamensis <- rtracklayer::import("../R_files/GTF/caenorhabditis_panamensis.PRJEB28259.WBPS16.canonical_geneset.gtf")
+panamensis <- as.data.frame(panamensis)
+
+remanei <- rtracklayer::import("../R_files/GTF/caenorhabditis_remanei.PRJNA577507.WBPS16.canonical_geneset.gtf")
+remanei <- as.data.frame(remanei)
+
+tribulationis <- rtracklayer::import("../R_files/GTF/caenorhabditis_tribulationis.PRJEB12608.WBPS16.canonical_geneset.gtf")
+tribulationis <- as.data.frame(tribulationis)
+
+tropicalis <- rtracklayer::import("../R_files/GTF/caenorhabditis_tropicalis.PRJNA53597.WBPS16.canonical_geneset.gtf")
+tropicalis <- as.data.frame(tropicalis)
+
+```
+
+```{r}
+## Add the orthologs in the GTF files 
+load("~/Travail/Synteny_project/First app/orthogroups_na.RData")
+
+#Bovis
+ortho_bovis <- orthogroups_na %>%
+  select(Orthogroup, bovis_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+bovis <- merge(bovis, ortho_bovis, by = "transcript_id", all.x = TRUE)
+
+#Becei
+ortho_becei <- orthogroups_na %>%
+  select(Orthogroup, becei_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+becei <- merge(becei, ortho_becei, by = "transcript_id", all.x = TRUE)
+
+#Panamensis
+ortho_panamensis <- orthogroups_na %>%
+  select(Orthogroup, panamensis_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+ panamensis <- merge(panamensis, ortho_panamensis, by = "transcript_id", all.x = TRUE)
+
+#Inopinata
+ortho_inopinata <- orthogroups_na %>%
+  select(Orthogroup, inopinata_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+inopinata <- merge(inopinata, ortho_inopinata, by = "transcript_id", all.x = TRUE)
+ 
+#Elegans 
+ortho_elegans <- orthogroups_na %>%  
+  select(Orthogroup, elegans_longest_transcript) %>% 
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "gene_id") %>%
+  separate(col = gene_id, into = paste("gene_id_", 1:400, sep = "_"), sep = ",") %>% 
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="gene_id") %>% 
+  select(-nothing) %>%
+  drop_na() %>% 
+  filter(!duplicated(.$gene_id))
+#Merge
+elegans <- merge(elegans, ortho_elegans, by = "gene_id", all.x = TRUE)
+
+
+#Tropicalis
+ortho_tropicalis <- orthogroups_na %>%
+  select(Orthogroup, tropicalis_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+tropicalis <- merge(tropicalis, ortho_tropicalis, by = "transcript_id", all.x = TRUE)
+
+#Remanei
+ortho_remanei <- orthogroups_na %>%
+  select(Orthogroup, remanei_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+remanei <- merge(remanei, ortho_remanei, by = "transcript_id", all.x = TRUE)
+
+#Latens
+ortho_latens <- orthogroups_na %>%
+  select(Orthogroup, latens_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "gene_id") %>%
+  separate(col = gene_id, into = paste("gene_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="gene_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$gene_id))
+#Merge
+latens <- merge(latens, ortho_latens, by = "gene_id", all.x = TRUE)
+
+#Tribulationis
+ortho_tribulationis <- orthogroups_na %>%
+  select(Orthogroup, tribulationis_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+tribulationis <- merge(tribulationis, ortho_tribulationis, by = "transcript_id", all.x = TRUE)
+
+#Briggsae
+ortho_briggsae <- orthogroups_na %>%
+  select(Orthogroup, briggsae_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "gene_id") %>%
+  separate(col = gene_id, into = paste("gene_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="gene_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$gene_id))
+#Merge
+briggsae <- merge(briggsae, ortho_briggsae, by = "gene_id", all.x = TRUE)
+
+#Nigoni
+ortho_nigoni <- orthogroups_na %>%
+  select(Orthogroup, nigoni_longest_transcript) %>%
+  pivot_longer(cols = 2, names_to = "species_name", values_to = "transcript_id") %>%
+  separate(col = transcript_id, into = paste("transcript_id_", 1:400, sep = "_"), sep = ",") %>%
+  select(-species_name) %>%
+  pivot_longer(cols = 2:401, names_to = "nothing", values_to ="transcript_id") %>%
+  select(-nothing) %>%
+  drop_na() %>%
+  filter(!duplicated(.$transcript_id))
+#Merge
+nigoni <- merge(nigoni, ortho_nigoni, by = "transcript_id", all.x = TRUE)
+```
+
+```{r}
+#Create files with columns gene_id and orthogroups 
+ortho_bovis <- bovis %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_becei <- becei %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_panamensis <- panamensis %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_inopinata <- inopinata %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_tropicalis <- tropicalis %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_remanei <- remanei %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_latens <- latens %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_tribulationis <- tribulationis %>% select(gene_id, Orthogroup)%>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_briggsae <- briggsae %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+ortho_nigoni <- nigoni %>% select(gene_id, Orthogroup) %>% distinct(gene_id, .keep_all = TRUE) %>% drop_na()
+```
+
+```{r}
+## Save ortho_species 
+write.csv(ortho_bovis, "../R_files/CSV/ortho_bovis.csv")
+write.csv(ortho_becei, "../R_files/CSV/ortho_becei.csv")
+write.csv(ortho_panamensis, "../R_files/CSV/ortho_panamensis.csv")
+write.csv(ortho_inopinata, "../R_files/CSV/ortho_inopinata.csv")
+write.csv(ortho_tropicalis, "../R_files/CSV/ortho_tropicalis.csv")
+write.csv(ortho_remanei, "../R_files/CSV/ortho_remanei.csv")
+write.csv(ortho_latens, "../R_files/CSV/ortho_latens.csv")
+write.csv(ortho_tribulationis, "../R_files/CSV/ortho_tribulationis.csv")
+write.csv(ortho_briggsae, "../R_files/CSV/ortho_briggsae.csv")
+write.csv(ortho_nigoni, "../R_files/CSV/ortho_nigoni.csv")
+```
+
